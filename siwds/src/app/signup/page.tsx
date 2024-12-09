@@ -70,9 +70,17 @@ export default function SignupPage() {
                 onChange={(e) => setUser({...user, password: e.target.value})}
                 placeholder="password"/>
             
-            <button onClick={onSignup} className="p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:border-gray-700">
-                {buttonDisabled ? "No signup" : "Signup"}
-            </button>
+            <button
+                onClick={(e) => {
+                    e.preventDefault();
+                    onSignup();
+                }}
+                disabled={buttonDisabled || loading}
+                className={`p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none ${
+                    buttonDisabled || loading ? "cursor-not-allowed opacity-50" : "focus:border-gray-700"
+                }`}>
+            {loading ? "Signing up..." : "Signup"}
+        </button>
             <Link href={"/login"}>Visit login page</Link>
         </div>
         
