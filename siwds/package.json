@@ -20,6 +20,8 @@
     "react-hot-toast": "^2.4.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.1",
     "@types/react": "^19.0.1",
     "eslint": "^8",
