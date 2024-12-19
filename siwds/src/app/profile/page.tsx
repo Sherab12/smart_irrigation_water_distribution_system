@@ -1,6 +1,6 @@
 "use client";
 import axios from "axios";
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,29 @@ import { useRouter } from "next/navigation";
 export default function ProfilePage() {
     const router = useRouter()
     const [data, setData] = useState("nothing")
+    
+
+
+    const [flowRate, setFlowRate] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const res = await fetch('/api/users');  // Fetch flow rate from the API
+            const data = await res.json();
+            setFlowRate(data.flowRate);  // Set the flow rate state
+        };
+    
+        // Fetch data every 2 seconds
+        const interval = setInterval(fetchData, 2000);
+        fetchData(); // Initial fetch
+    
+        return () => clearInterval(interval);  // Cleanup on component unmount
+    }, []);
+
+
+
+
+
     const logout = async () => {
         try{
             await axios.get('/api/users/logout')
@@ -37,6 +60,8 @@ export default function ProfilePage() {
             <button onClick={getUserDetails} className="bg-green-800 mt-4 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                 Get User Details
             </button>
+            <h1>Water Flow Rate</h1>
+        <p>Flow Rate: {flowRate !== null ? `${flowRate} L/min` : 'Loading...'}</p>
         </div>
     )
 }
