@@ -3,16 +3,15 @@
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "../../components/navbar";
+import Link from "next/link";
 
 export default function ProfilePage() {
     const router = useRouter();
     const [data, setData] = useState("nothing");
     const [flowRate, setFlowRate] = useState(null);
     const [totalWaterFlow, setTotalWaterFlow] = useState(null);
-    const [showModal, setShowModal] = useState(false); // State to toggle modal visibility
 
     useEffect(() => {
         const fetchData = async () => {
@@ -52,8 +51,8 @@ export default function ProfilePage() {
 
     return (
         <div className="flex">
-            {/* Navbar */}
-            <Navbar />
+            {/* Pass the active page to Navbar */}
+            <Navbar activePage="profile" />
 
             {/* Main Content */}
             <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
@@ -75,7 +74,6 @@ export default function ProfilePage() {
                     <p>Total Water Flow: {totalWaterFlow !== null ? `${totalWaterFlow.toFixed(2)} L` : "Loading..."}</p>
                 </div>
             </div>
-
         </div>
     );
 }
