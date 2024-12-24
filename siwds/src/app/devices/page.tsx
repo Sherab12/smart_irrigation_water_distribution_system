@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "../../components/navbar";
 import Link from "next/link";
 
-export default function ProfilePage() {
+export default function DevicesPage() {
     const router = useRouter();
     const [data, setData] = useState("nothing");
     
