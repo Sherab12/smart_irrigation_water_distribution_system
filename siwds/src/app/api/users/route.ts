@@ -1,39 +1,126 @@
+import { connect } from '../../../dbConfig/db';
+import Source from '../../../models/source';
 import { NextResponse } from 'next/server';
-import mqtt from 'mqtt';
 
-const mqttClient = mqtt.connect('mqtt://192.168.0.152:1883'); // Replace with your laptop's IP address and port
 
-const topic = 'smart_irrigation/flow';
-let flowRate = 0;
-let totalWaterFlow = 0;  // Variable to store total water flow
-
-// Connect to the MQTT broker and subscribe to the relevant topic
-mqttClient.on('connect', () => {
-  console.log('Connected to MQTT broker');
-  mqttClient.subscribe(topic, (err) => {
-    if (!err) {
-      console.log('Subscribed to topic:', topic);
-    } else {
-      console.error('Subscription error:', err);
-    }
-  });
-});
-
-// Handle incoming messages from the broker
-mqttClient.on('message', (receivedTopic, message) => {
-  if (receivedTopic === topic) {
-    try {
-      const data = JSON.parse(message.toString());
-      flowRate = data.flowRate;  // Update the flow rate value
-      totalWaterFlow = data.totalWaterFlow;  // Update the total water flow value
-      console.log('Received flow rate:', flowRate, 'Total water flow:', totalWaterFlow);
-    } catch (error) {
-      console.error('Error parsing MQTT message:', error);
-    }
+const sources: Record<
+  string,
+  {
+    flowSensors: Record<string, { flowRate: number; totalWaterFlow: number }>;
+    pressureSensors: Record<string, { pressure: number }>;
+    valves: Record<string, { state: 'open' | 'closed' | 'partial'; percentageOpen?: number }>;
   }
-});
+> = {};
 
-// Named export for GET method (required by Next.js 13+ App Router)
-export async function GET() {
-  return NextResponse.json({ flowRate, totalWaterFlow });  // Respond with flow rate and total water flow
+
+
+// API route for adding a source and its sensors
+export async function POST(req: Request) {
+  await connect();
+
+  try {
+    const { sourceName, flowSensors, pressureSensors, valves } = await req.json();
+
+    if (!sourceName) {
+      return NextResponse.json(
+        { error: 'Source name is required' },
+        { status: 400 }
+      );
+    }
+
+    const existingSource = await Source.findOne({ name: sourceName });
+
+    if (!existingSource) {
+      // Map sensors and valves to match the schema
+      const flowSensorObjects = flowSensors?.map((sensor: string) => ({
+        name: sensor,
+        flowRate: 0,
+        totalWaterFlow: 0,
+      })) || [];
+
+      const pressureSensorObjects = pressureSensors?.map((sensor: string) => ({
+        name: sensor,
+        pressure: 0,
+      })) || [];
+
+      const valveObjects = valves?.map((valve: string) => ({
+        name: valve,
+        state: 'closed',
+        percentageOpen: 0,
+      })) || [];
+
+      // Create and save a new source with sensors
+      const newSource = new Source({
+        name: sourceName,
+        flowSensors: flowSensorObjects,
+        pressureSensors: pressureSensorObjects,
+        valves: valveObjects,
+      });
+
+      await newSource.save();
+    }
+
+    return NextResponse.json({ success: true, message: 'Source added successfully' });
+  } catch (error) {
+    console.error('Error adding source:', error);
+    return NextResponse.json(
+      { error: 'An error occurred while adding the source' },
+      { status: 500 }
+    );
+  }
+}
+
+// API route for fetching sensor data
+export async function GET(req: Request) {
+  await connect();
+
+  const url = new URL(req.url);
+  const source = url.searchParams.get("source");
+  const sensor = url.searchParams.get("sensor");
+
+  try {
+    if (!source && !sensor) {
+      // Return all sources
+      const allSources = await Source.find();
+      const formattedSources = allSources.reduce((acc, source) => {
+        acc[source.name] = {
+          flowSensors: source.flowSensors.map((s) => s.name),
+          pressureSensors: source.pressureSensors.map((s) => s.name),
+          valves: source.valves.map((v) => v.name),
+        };
+        return acc;
+      }, {});
+      return NextResponse.json(formattedSources);
+    }
+
+    if (!source || !sensor) {
+      return NextResponse.json(
+        { error: "Please provide both source and sensor parameters" },
+        { status: 400 }
+      );
+    }
+
+    const sourceData = await Source.findOne({ name: source });
+    if (!sourceData) {
+      return NextResponse.json({ error: "Source not found" }, { status: 404 });
+    }
+
+    // Find the correct sensor data based on the sensor name
+    const sensorData =
+      sourceData.flowSensors.find((s) => s.name === sensor) ||
+      sourceData.pressureSensors.find((s) => s.name === sensor) ||
+      sourceData.valves.find((s) => s.name === sensor);
+
+    if (!sensorData) {
+      return NextResponse.json({ error: "Sensor not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(sensorData);
+  } catch (error) {
+    console.error("Error fetching sensor data:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch sensor data" },
+      { status: 500 }
+    );
+  }
 }

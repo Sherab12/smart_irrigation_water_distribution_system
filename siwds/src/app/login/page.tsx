@@ -40,11 +40,11 @@ export default function LogInPage() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 py-2">
             <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-md">
                 <div className="flex flex-col items-center">
-                    <img
+                    {/* <img
                         src="/logo.png"
                         alt="AgriFlow"
                         className="w-20 h-20 mb-4"
-                    />
+                    /> */}
                     <h1 className="text-xl font-semibold text-blue-700 mb-2">
                         AgriFlow
                     </h1>
@@ -52,7 +52,7 @@ export default function LogInPage() {
                 <form className="mt-4">
                     <label
                         htmlFor="email"
-                        className="block text-m font-medium text-gray-700"
+                        className="block text-sm font-bold text-gray-700"
                     >
                         Username or Email
                     </label>
@@ -66,7 +66,7 @@ export default function LogInPage() {
                     />
                     <label
                         htmlFor="password"
-                        className="block text-m font-medium text-gray-700 mt-4"
+                        className="block text-sm font-bold  text-gray-700 mt-4"
                     >
                         Password
                     </label>
