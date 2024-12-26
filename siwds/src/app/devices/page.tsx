@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import Navbar from "../../components/navbar";
 
 // Validation Modal Component
-const ValidationModal = ({ show, onClose }: { show: boolean, onClose: () => void }) => {
+const ValidationModal = ({ show, onClose }: { show: boolean; onClose: () => void }) => {
     if (!show) return null;
 
     return (
@@ -15,18 +15,22 @@ const ValidationModal = ({ show, onClose }: { show: boolean, onClose: () => void
                 <h2 className="text-xl text-center font-bold mb-4">Error</h2>
                 <p className="mb-4 text-center">Please make sure all required fields are filled</p>
                 <div className="flex justify-center space-x-6">
-                    <button onClick={onClose} className="bg-red-500 text-white text-center py-2 px-4 rounded hover:bg-red-600">
+                    <button
+                        onClick={onClose}
+                        className="bg-red-500 text-white text-center py-2 px-4 rounded hover:bg-red-600"
+                    >
                         OK
                     </button>
                 </div>
-                
             </div>
         </div>
     );
 };
 
 export default function DevicePage() {
-    const [sources, setSources] = useState<Record<string, { flowSensors: string[]; pressureSensors: string[]; valves: string[] }>>({});
+    const [sources, setSources] = useState<
+        Record<string, { flowSensors: string[]; pressureSensors: string[]; valves: string[] }>
+    >({});
     const [newSource, setNewSource] = useState<string>("");
     const [newFlowSensors, setNewFlowSensors] = useState<string>("");
     const [newPressureSensors, setNewPressureSensors] = useState<string>("");
@@ -34,103 +38,104 @@ export default function DevicePage() {
     const [selectedSource, setSelectedSource] = useState<string>("");
     const [selectedSensorType, setSelectedSensorType] = useState<string>("flowSensors");
     const [selectedSensor, setSelectedSensor] = useState<string>("");
-    const [sensorData, setSensorData] = useState<any>(null); // Use `any` or define a more general type
-    const [showValidationModal, setShowValidationModal] = useState(false); // Validation modal visibility state
+    const [sensorData, setSensorData] = useState<any>(null); // Sensor data state
+    const [showValidationModal, setShowValidationModal] = useState(false);
 
-    // Fetch sources on component mount
+    // Fetch sources on mount
     useEffect(() => {
         const fetchSources = async () => {
             try {
-                const response = await axios.get("/api/users"); // Update with correct endpoint
+                const response = await axios.get("/api/users"); // Replace with your endpoint
                 if (response.status === 200) {
                     setSources(response.data);
                 } else {
                     toast.error("Failed to fetch sources");
                 }
             } catch (error) {
-                toast.error("Failed to fetch sources");
                 console.error("Error fetching sources:", error);
+                toast.error("Failed to fetch sources");
             }
         };
-
         fetchSources();
     }, []);
 
-    // Fetch sensor data
+    // Fetch sensor data from the MQTT broker (simulated)
     const fetchSensorData = async () => {
-        if (!selectedSource || !selectedSensor) {
-            toast.error("Please select a source and sensor");
-            return;
-        }
+    if (!selectedSource || !selectedSensor) {
+        toast.error("Please select a source and sensor");
+        return;
+    }
 
-        try {
-            const response = await axios.get(`/api/users?source=${selectedSource}&sensor=${selectedSensor}`);
-            if (response.status === 200) {
-                setSensorData(response.data);
-                toast.success("Sensor data fetched successfully");
-            } else {
-                toast.error(response.data.error || "Failed to fetch sensor data");
-            }
-        } catch (error) {
-            toast.error("Failed to fetch sensor data");
-            console.error("Error fetching sensor data:", error);
+    try {
+        const response = await axios.get(`/api/users?source=${selectedSource}&sensor=${selectedSensor}`);
+        if (response.status === 200) {
+            setSensorData(response.data);
+            toast.success("Sensor data fetched successfully");
+        } else {
+            toast.error(response.data.error || "Failed to fetch sensor data");
         }
-    };
+    } catch (error) {
+        toast.error("Failed to fetch sensor data");
+        console.error("Error fetching sensor data:", error);
+    }
+};
+
+    
 
     // Add new source and sensors
     const addSource = async () => {
-        // Validate required fields before proceeding
-        if (!newSource || (!newFlowSensors && !newPressureSensors && !newValves)) {
-            setShowValidationModal(true); // Show the validation modal
+        if (!newSource || !newFlowSensors) {
+            setShowValidationModal(true);
             return;
         }
-
-        const flowSensors = newFlowSensors.split(",").map((s) => s.trim()).filter(Boolean);
-        const pressureSensors = newPressureSensors.split(",").map((s) => s.trim()).filter(Boolean);
-        const valves = newValves.split(",").map((s) => s.trim()).filter(Boolean);
-
+    
+        const flowSensors = newFlowSensors.split(',').map((s) => s.trim()).filter(Boolean);
+    
         try {
-            const response = await axios.post("/api/users", {
+            // Add the source and sensors to the database
+            const response = await axios.post('/api/users', {
                 sourceName: newSource,
                 flowSensors,
-                pressureSensors,
-                valves,
             });
-
+    
             if (response.data.success) {
                 toast.success(response.data.message);
-
+    
+                // Subscribe to MQTT topics for the new flow sensors
+                for (const flowSensor of flowSensors) {
+                    await axios.post('/api/devices/subscribe', {
+                        sourceName: newSource,
+                        flowSensorName: flowSensor,
+                    });
+                }
+    
                 // Update the local sources state
                 setSources((prevSources) => ({
                     ...prevSources,
-                    [newSource]: { flowSensors, pressureSensors, valves },
+                    [newSource]: { flowSensors, pressureSensors: [], valves: [] },
                 }));
-
+    
                 // Reset input fields
-                setNewSource("");
-                setNewFlowSensors("");
-                setNewPressureSensors("");
-                setNewValves("");
+                setNewSource('');
+                setNewFlowSensors('');
             } else {
-                toast.error(response.data.error || "Failed to add source and sensors");
+                toast.error(response.data.error || 'Failed to add source and sensors');
             }
         } catch (error) {
-            toast.error("Failed to add source and sensors");
-            console.error("Error adding source and sensors:", error);
+            toast.error('Failed to add source and sensors');
+            console.error('Error adding source and sensors:', error);
         }
     };
+    
 
-    // Close the validation modal
-    const closeValidationModal = () => {
-        setShowValidationModal(false);
-    };
+    // Close validation modal
+    const closeValidationModal = () => setShowValidationModal(false);
 
     return (
         <div className="flex">
             <Navbar activePage="devices" />
 
             <div className="flex flex-col w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
-
                 {/* Add Source and Sensors */}
                 <div className="mb-6">
                     <h2 className="text-base font-bold mb-2">Add New Source and Sensors</h2>
@@ -217,31 +222,10 @@ export default function DevicePage() {
                 {sensorData && (
                     <div className="p-4 bg-white shadow rounded">
                         <h3 className="text-base font-bold mb-2">Sensor Data</h3>
-
-                        {/* Handle flow sensor data */}
-                        {sensorData.flowRate !== undefined && (
-                            <div className="text-sm mb-2">
-                                <p className="mb-2">Flow Rate: {sensorData.flowRate}</p>
-                                <p className="mb-2">Total Water Flow: {sensorData.totalWaterFlow}</p>
-                            </div>
-                        )}
-
-                        {/* Handle pressure sensor data */}
-                        {sensorData.pressure !== undefined && (
-                            <div className="text-sm mb-2">
-                                <p className="mb-2">Pressure: {sensorData.pressure}</p>
-                            </div>
-                        )}
-
-                        {/* Handle valve data */}
-                        {sensorData.state !== undefined && (
-                            <div className="text-sm mb-2">
-                                <p className="mb-2">Valve State: {sensorData.state}</p>
-                                <p className="mb-2">Percentage Open: {sensorData.percentageOpen}%</p>
-                            </div>
-                        )}
+                        <pre>{JSON.stringify(sensorData, null, 2)}</pre>
                     </div>
                 )}
+
             </div>
 
             {/* Validation Modal */}

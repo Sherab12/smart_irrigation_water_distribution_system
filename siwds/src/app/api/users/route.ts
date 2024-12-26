@@ -84,9 +84,9 @@ export async function GET(req: Request) {
       const allSources = await Source.find();
       const formattedSources = allSources.reduce((acc, source) => {
         acc[source.name] = {
-          flowSensors: source.flowSensors.map((s) => s.name),
-          pressureSensors: source.pressureSensors.map((s) => s.name),
-          valves: source.valves.map((v) => v.name),
+          flowSensors: source.flowSensors.map((s: { name: any; }) => s.name),
+          pressureSensors: source.pressureSensors.map((s: { name: any; }) => s.name),
+          valves: source.valves.map((v: { name: any; }) => v.name),
         };
         return acc;
       }, {});
@@ -107,9 +107,9 @@ export async function GET(req: Request) {
 
     // Find the correct sensor data based on the sensor name
     const sensorData =
-      sourceData.flowSensors.find((s) => s.name === sensor) ||
-      sourceData.pressureSensors.find((s) => s.name === sensor) ||
-      sourceData.valves.find((s) => s.name === sensor);
+      sourceData.flowSensors.find((s: { name: string; }) => s.name === sensor) ||
+      sourceData.pressureSensors.find((s: { name: string; }) => s.name === sensor) ||
+      sourceData.valves.find((s: { name: string; }) => s.name === sensor);
 
     if (!sensorData) {
       return NextResponse.json({ error: "Sensor not found" }, { status: 404 });

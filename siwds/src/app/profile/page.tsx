@@ -12,37 +12,36 @@ export default function ProfilePage() {
     const [data, setData] = useState("nothing");
     const [flowRate, setFlowRate] = useState(null);
     const [totalWaterFlow, setTotalWaterFlow] = useState(null);
+    const [selectedSource, setSelectedSource] = useState<string>("");
+    const [selectedSensor, setSelectedSensor] = useState<string>("");
+
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!selectedSource || !selectedSensor) return;
+    
             try {
-                const res = await fetch("/api/users");
+                const res = await fetch(`/api/devices/flow/?source=${selectedSource}&flowSensor=${selectedSensor}`);
+                if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    
                 const data = await res.json();
-
-                if (data.flowRate !== undefined && data.totalWaterFlow !== undefined) {
+                if (data.flowRate !== undefined && data.totalWaterFlown !== undefined) {
                     setFlowRate(data.flowRate);
-                    setTotalWaterFlow(data.totalWaterFlow);
+                    setTotalWaterFlow(data.totalWaterFlown);
+                } else {
+                    console.error("Unexpected data format:", data);
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
         };
-
+    
         const interval = setInterval(fetchData, 2000);
         fetchData();
-
+    
         return () => clearInterval(interval);
-    }, []);
-
-    const logout = async () => {
-        try {
-            await axios.get("/api/users/logout");
-            toast.success("Logout successful");
-            router.push("/");
-        } catch (error) {
-            toast.error(error.message);
-        }
-    };
+    }, [selectedSource, selectedSensor]);
+    
 
     const getUserDetails = async () => {
         const res = await axios.get("/api/users/me", { withCredentials: true });
@@ -51,10 +50,8 @@ export default function ProfilePage() {
 
     return (
         <div className="flex">
-            {/* Pass the active page to Navbar */}
             <Navbar activePage="profile" />
 
-            {/* Main Content */}
             <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
                 <h1 className="text-2xl font-semibold mb-4">Profile</h1>
                 <hr className="w-full mb-4" />
