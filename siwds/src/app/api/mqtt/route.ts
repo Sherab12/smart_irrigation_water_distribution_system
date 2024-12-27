@@ -1,10 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import mqtt from 'mqtt';
-import { parse } from 'url'; 
 import { NextResponse } from 'next/server';
 
 // Set up the MQTT client to connect to the broker
-const mqttClient = mqtt.connect(process.env.MQTT_URL || 'mqtt://localhost');
+const mqttClient = mqtt.connect(process.env.MQTT_URL || 'mqtt://192.168.0.152:1883');
 
 // Store sensor data temporarily (in-memory)
 const sensorData: Record<string, any> = {};
@@ -12,7 +11,7 @@ const sensorData: Record<string, any> = {};
 // MQTT connection and subscriptions
 mqttClient.on('connect', () => {
   console.log('Connected to MQTT Broker');
-  
+
   // Subscribe to all relevant topics dynamically
   const topics = generateTopics();
   mqttClient.subscribe(topics, { qos: 1 }, (err) => {
@@ -26,6 +25,8 @@ mqttClient.on('connect', () => {
 
 // Handle incoming MQTT messages
 mqttClient.on('message', (topic, message) => {
+  console.log('Received topic:', topic);
+  console.log('Message:', message.toString());
   try {
     sensorData[topic] = JSON.parse(message.toString());
   } catch (error) {
@@ -33,12 +34,12 @@ mqttClient.on('message', (topic, message) => {
   }
 });
 
-// Generate topics dynamically for 5 sources and up to 30 sensors of each type
+// Generate topics dynamically for sources and sensors
 function generateTopics(): string[] {
-  const sources = 5;
-  const sensorsPerType = 50;
+  const sources = 10;
+  const sensorsPerType = 30;
   const types = ['flowsensor/flow', 'pressuresensor/pressure', 'valve/valve'];
-  
+
   const topics: string[] = [];
   for (let source = 1; source <= sources; source++) {
     for (const type of types) {
@@ -52,7 +53,6 @@ function generateTopics(): string[] {
 
 // Handle the GET method
 export const GET = async (req: Request) => {
-  // Parse query parameters manually from req.url
   const { searchParams } = new URL(req.url);
   const source = searchParams.get('source');
   const sensorType = searchParams.get('sensorType');
@@ -68,8 +68,8 @@ export const GET = async (req: Request) => {
     );
   }
 
-  // Construct the key
-  const key = `${source}/${sensorType}${sensorId}`;
+  // Correct key construction
+  const key = `${source}/${sensorType}/${sensorId}`;
 
   // Return the data or 404 if not found
   if (sensorData[key]) {
@@ -81,8 +81,6 @@ export const GET = async (req: Request) => {
     );
   }
 };
-
-
 
 // Handle the POST method (if needed)
 export const POST = async (req: NextApiRequest, res: NextApiResponse) => {
