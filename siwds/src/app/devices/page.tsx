@@ -38,7 +38,7 @@ export default function DevicePage() {
     useEffect(() => {
         const fetchSources = async () => {
             try {
-                const response = await axios.get("/api/users"); // Update with correct endpoint
+                const response = await axios.get("/api/source"); // Update with correct endpoint
                 if (response.status === 200) {
                     setSources(response.data);
                 } else {
@@ -61,7 +61,7 @@ export default function DevicePage() {
         }
 
         try {
-            const response = await axios.get(`/api/users?source=${selectedSource}&sensor=${selectedSensor}`);
+            const response = await axios.get(`/api/source?source=${selectedSource}&sensor=${selectedSensor}`);
             if (response.status === 200) {
                 setSensorData(response.data);
                 toast.success("Sensor data fetched successfully");
@@ -87,7 +87,7 @@ export default function DevicePage() {
         const valves = newValves.split(",").map((s) => s.trim()).filter(Boolean);
 
         try {
-            const response = await axios.post("/api/users", {
+            const response = await axios.post("/api/source", {
                 sourceName: newSource,
                 flowSensors,
                 pressureSensors,
