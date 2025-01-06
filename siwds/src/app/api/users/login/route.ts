@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mqtt from 'mqtt';
+import Source from "@/models/source";
 
 // Connect to the database
 connect();
@@ -68,18 +69,67 @@ function triggerMqttConnection() {
         });
     });
 
-    mqttClient.on('message', async (topic, message) => {
-        // Your existing MQTT message handling logic
-        console.log('Received topic:', topic);
-        console.log('Message:', message.toString());
-        try {
-        const parsedData = JSON.parse(message.toString());
-        // Database handling logic for storing sensor data
-        // Your logic for processing the sensor data goes here
-        } catch (error) {
-        console.error('Failed to parse or store MQTT message:', error);
+    // Handle incoming MQTT messages
+mqttClient.on('message', async (topic, message) => {
+    console.log('Received topic:', topic);
+    console.log('Message:', message.toString());
+    try {
+      const parsedData = JSON.parse(message.toString());
+      await connect();
+  
+      const [sourceName, sensorType, sensorName] = topic.split('/');
+      const sensorId = sensorName; // e.g., flow1, pressure1, valve1
+  
+      // Find or create the source
+      let source = await Source.findOne({ name: sourceName });
+      if (!source) {
+        source = new Source({ name: sourceName });
+      }
+  
+      // Update the appropriate sensor data
+      if (sensorType.includes('flowsensor')) {
+        const flowSensor = source.flowSensors.find((sensor) => sensor.name === sensorId);
+        if (flowSensor) {
+          flowSensor.flowRate = parsedData.flowRate;
+          flowSensor.totalWaterFlow = parsedData.totalWaterFlown;
+        } else {
+          source.flowSensors.push({
+            name: sensorId,
+            flowRate: parsedData.flowRate,
+            totalWaterFlow: parsedData.totalWaterFlown,
+          });
         }
-    });
+      } else if (sensorType.includes('pressuresensor')) {
+        const pressureSensor = source.pressureSensors.find((sensor) => sensor.name === sensorId);
+        if (pressureSensor) {
+          pressureSensor.pressure = parsedData.pressure;
+        } else {
+          source.pressureSensors.push({
+            name: sensorId,
+            pressure: parsedData.pressure,
+          });
+        }
+      } else if (sensorType.includes('valve')) {
+        const valve = source.valves.find((sensor) => sensor.name === sensorId);
+        if (valve) {
+          valve.state = parsedData.state || 'closed';
+          valve.percentageOpen = parsedData.percentageOpen || 0;
+        } else {
+          source.valves.push({
+            name: sensorId,
+            state: parsedData.state || 'closed',
+            percentageOpen: parsedData.percentageOpen || 0,
+          });
+        }
+      }
+  
+      // Save the updated source to the database
+      await source.save();
+      console.log('Sensor data saved to MongoDB');
+    } catch (error) {
+      console.error('Failed to parse or store MQTT message:', error);
+    }
+  });
 }
 
 // Generate topics dynamically
