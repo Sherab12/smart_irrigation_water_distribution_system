@@ -12,11 +12,14 @@ const ValidationModal = ({ show, onClose }: { show: boolean, onClose: () => void
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
             <div className="bg-white p-6 rounded shadow-lg w-1/3">
-                <h2 className="text-lg font-semibold">Validation Error</h2>
-                <p className="mt-2">Please make sure all required fields are filled out before submitting.</p>
-                <button onClick={onClose} className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">
-                    OK
-                </button>
+                <h2 className="text-lg text-center font-semibold">Validation Error</h2>
+                <p className="mt-2 text-center">Please make sure all required fields are filled out before submitting.</p>
+                <div className=" text-center">
+                    <button onClick={onClose} className="mt-4 bg-red-500 text-white py-2 px-4 rounded">
+                        OK
+                    </button>
+                </div>
+                
             </div>
         </div>
     );
@@ -127,7 +130,7 @@ export default function DevicePage() {
             <Navbar activePage="devices" />
 
             <div className="flex flex-col w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
-                <h1 className="text-xl font-bold mb-4">Devices Page</h1>
+                
 
                 {/* Add Source and Sensors */}
                 <div className="mb-6">
