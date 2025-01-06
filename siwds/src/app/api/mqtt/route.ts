@@ -1,15 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import mqtt from 'mqtt';
-import { NextResponse } from 'next/server';
+import Source from '@/models/source';
+import { connect } from '@/dbConfig/db';
+
 
 // Set up the MQTT client to connect to the broker
 const mqttClient = mqtt.connect(process.env.MQTT_URL || 'mqtt://192.168.0.152:1883');
 
-// Store sensor data temporarily (in-memory)
-const sensorData: Record<string, any> = {};
-
 // MQTT connection and subscriptions
-mqttClient.on('connect', () => {
+mqttClient.on('connect', async () => {
   console.log('Connected to MQTT Broker');
 
   // Subscribe to all relevant topics dynamically
@@ -24,13 +23,64 @@ mqttClient.on('connect', () => {
 });
 
 // Handle incoming MQTT messages
-mqttClient.on('message', (topic, message) => {
+mqttClient.on('message', async (topic, message) => {
   console.log('Received topic:', topic);
   console.log('Message:', message.toString());
   try {
-    sensorData[topic] = JSON.parse(message.toString());
+    const parsedData = JSON.parse(message.toString());
+    await connect();
+
+    const [sourceName, sensorType, sensorName] = topic.split('/');
+    const sensorId = sensorName; // e.g., flow1, pressure1, valve1
+
+    // Find or create the source
+    let source = await Source.findOne({ name: sourceName });
+    if (!source) {
+      source = new Source({ name: sourceName });
+    }
+
+    // Update the appropriate sensor data
+    if (sensorType.includes('flowsensor')) {
+      const flowSensor = source.flowSensors.find((sensor) => sensor.name === sensorId);
+      if (flowSensor) {
+        flowSensor.flowRate = parsedData.flowRate;
+        flowSensor.totalWaterFlow = parsedData.totalWaterFlown;
+      } else {
+        source.flowSensors.push({
+          name: sensorId,
+          flowRate: parsedData.flowRate,
+          totalWaterFlow: parsedData.totalWaterFlown,
+        });
+      }
+    } else if (sensorType.includes('pressuresensor')) {
+      const pressureSensor = source.pressureSensors.find((sensor) => sensor.name === sensorId);
+      if (pressureSensor) {
+        pressureSensor.pressure = parsedData.pressure;
+      } else {
+        source.pressureSensors.push({
+          name: sensorId,
+          pressure: parsedData.pressure,
+        });
+      }
+    } else if (sensorType.includes('valve')) {
+      const valve = source.valves.find((sensor) => sensor.name === sensorId);
+      if (valve) {
+        valve.state = parsedData.state || 'closed';
+        valve.percentageOpen = parsedData.percentageOpen || 0;
+      } else {
+        source.valves.push({
+          name: sensorId,
+          state: parsedData.state || 'closed',
+          percentageOpen: parsedData.percentageOpen || 0,
+        });
+      }
+    }
+
+    // Save the updated source to the database
+    await source.save();
+    console.log('Sensor data saved to MongoDB');
   } catch (error) {
-    console.error('Failed to parse MQTT message:', error);
+    console.error('Failed to parse or store MQTT message:', error);
   }
 });
 
@@ -49,49 +99,4 @@ function generateTopics(): string[] {
     }
   }
   return topics;
-}
-
-// Handle the GET method
-export const GET = async (req: Request) => {
-  const { searchParams } = new URL(req.url);
-  const source = searchParams.get('source');
-  const sensorType = searchParams.get('sensorType');
-  const sensorId = searchParams.get('sensorId');
-
-  // Validate query parameters
-  if (!source || !sensorType || !sensorId) {
-    return NextResponse.json(
-      {
-        error: 'Invalid query parameters. Ensure "source", "sensorType", and "sensorId" are provided.',
-      },
-      { status: 400 }
-    );
-  }
-
-  // Correct key construction
-  const key = `${source}/${sensorType}/${sensorId}`;
-
-  // Return the data or 404 if not found
-  if (sensorData[key]) {
-    return NextResponse.json({ [key]: sensorData[key] });
-  } else {
-    return NextResponse.json(
-      { error: `Data not found for ${key}` },
-      { status: 404 }
-    );
-  }
-};
-
-// Handle the POST method (if needed)
-export const POST = async (req: NextApiRequest, res: NextApiResponse) => {
-  res.status(405).json({ error: 'POST method not allowed on this route' });
-};
-
-// Other methods (HEAD, OPTIONS, etc.)
-export const HEAD = async (req: NextApiRequest, res: NextApiResponse) => {
-  res.status(200).end();
-};
-
-export const OPTIONS = async (req: NextApiRequest, res: NextApiResponse) => {
-  res.setHeader('Allow', 'GET, POST, HEAD, OPTIONS').end();
-};
+} 
