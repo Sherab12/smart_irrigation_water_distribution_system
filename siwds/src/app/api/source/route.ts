@@ -2,18 +2,6 @@ import { connect } from '../../../dbConfig/db';
 import Source from '../../../models/source';
 import { NextResponse } from 'next/server';
 
-
-const sources: Record<
-  string,
-  {
-    flowSensors: Record<string, { flowRate: number; totalWaterFlow: number }>;
-    pressureSensors: Record<string, { pressure: number }>;
-    valves: Record<string, { state: 'open' | 'closed' | 'partial'; percentageOpen?: number }>;
-  }
-> = {};
-
-
-
 // API route for adding a source and its sensors
 export async function POST(req: Request) {
   await connect();

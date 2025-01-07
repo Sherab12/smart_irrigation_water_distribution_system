@@ -1,74 +1,103 @@
 "use client";
 
-import axios from "axios";
 import React, { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import mqtt from "mqtt";
 import Navbar from "../../components/navbar";
-import Link from "next/link";
 
 export default function ProfilePage() {
-    const router = useRouter();
-    const [data, setData] = useState("nothing");
-    const [flowRate, setFlowRate] = useState(null);
-    const [totalWaterFlow, setTotalWaterFlow] = useState(null);
-    const [selectedSource, setSelectedSource] = useState<string>("");
-    const [selectedSensor, setSelectedSensor] = useState<string>("");
-
+    const [sensorData, setSensorData] = useState({});
+    const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (!selectedSource || !selectedSensor) return;
-    
-            try {
-                const res = await fetch(`/api/devices/flow/?source=${selectedSource}&flowSensor=${selectedSensor}`);
-                if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-    
-                const data = await res.json();
-                if (data.flowRate !== undefined && data.totalWaterFlown !== undefined) {
-                    setFlowRate(data.flowRate);
-                    setTotalWaterFlow(data.totalWaterFlown);
-                } else {
-                    console.error("Unexpected data format:", data);
-                }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            }
-        };
-    
-        const interval = setInterval(fetchData, 2000);
-        fetchData();
-    
-        return () => clearInterval(interval);
-    }, [selectedSource, selectedSensor]);
-    
+        // Connect to the MQTT broker using WebSocket
+        const mqttClient = mqtt.connect("ws://localhost:8083/mqtt");
 
-    const getUserDetails = async () => {
-        const res = await axios.get("/api/users/me", { withCredentials: true });
-        setData(res.data.data._id);
-    };
+        mqttClient.on("connect", () => {
+            console.log("Connected to MQTT broker");
+            setIsConnected(true);
+            
+            // Subscribe to relevant topics
+            const topics = generateTopics();
+            mqttClient.subscribe(topics, { qos: 1 }, (err) => {
+                if (err) {
+                    console.error("Failed to subscribe:", err);
+                } else {
+                    console.log("Subscribed to all sensor topics");
+                }
+            });
+        });
+
+        mqttClient.on("message", (topic, message) => {
+            const parsedMessage = JSON.parse(message.toString());
+            setSensorData((prevData) => ({
+                ...prevData,
+                [topic]: parsedMessage,
+            }));
+        });
+
+        mqttClient.on("close", () => {
+            console.log("Disconnected from MQTT broker");
+            setIsConnected(false);
+        });
+
+        return () => {
+            mqttClient.end();
+        };
+    }, []);
+
+    // Generate MQTT topics dynamically
+    function generateTopics() {
+        const sources = 10;
+        const sensorsPerType = 30;
+        const types = ["flowsensor/flow", "pressuresensor/pressure", "valve/valve"];
+        const topics = [];
+
+        for (let source = 1; source <= sources; source++) {
+            for (const type of types) {
+                for (let sensor = 1; sensor <= sensorsPerType; sensor++) {
+                    topics.push(`source${source}/${type}${sensor}`);
+                }
+            }
+        }
+        return topics;
+    }
 
     return (
         <div className="flex">
             <Navbar activePage="profile" />
 
             <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
-                <h1 className="text-2xl font-semibold mb-4">Profile</h1>
-                <hr className="w-full mb-4" />
-                <p className="mb-4">Profile page</p>
-                <h2 className="mb-4">
-                    {data === "nothing" ? "Nothing" : <Link href={`/profile/${data}`}>{data}</Link>}
-                </h2>
-                <button
-                    onClick={getUserDetails}
-                    className="bg-green-500 mt-4 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-                >
-                    Get User Details
-                </button>
-                <div className="mt-6">
-                    <h1 className="text-lg font-semibold">Water Flow Rate</h1>
-                    <p>Flow Rate: {flowRate !== null ? `${flowRate} L/min` : "Loading..."}</p>
-                    <p>Total Water Flow: {totalWaterFlow !== null ? `${totalWaterFlow.toFixed(2)} L` : "Loading..."}</p>
+                <h1 className="text-2xl font-bold mb-4">Real-Time Sensor Dashboard</h1>
+                <p className="mb-4">
+                    Status:{" "}
+                    <span
+                        className={`font-semibold ${
+                            isConnected ? "text-green-500" : "text-red-500"
+                        }`}
+                    >
+                        {isConnected ? "Connected" : "Disconnected"}
+                    </span>
+                </p>
+
+                <div className="w-full max-w-4xl overflow-x-auto">
+                    <table className="table-auto w-full border-collapse border border-gray-200">
+                        <thead>
+                            <tr className="bg-gray-100">
+                                <th className="border border-gray-300 px-4 py-2">Topic</th>
+                                <th className="border border-gray-300 px-4 py-2">Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(sensorData).map(([topic, data], index) => (
+                                <tr key={index}>
+                                    <td className="border border-gray-300 px-4 py-2">{topic}</td>
+                                    <td className="border border-gray-300 px-4 py-2">
+                                        {JSON.stringify(data)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
