@@ -300,7 +300,7 @@ export default function Home() {
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
-       d="M12 20.25c4.97 0 9-3.134 9-7.125S16.97 6 12 6s-9 3.134-9 7.125c0 1.77.828 3.374 2.19 4.59-.465 1.79-1.35 3.072-1.356 3.081a.75.75 0 00.935.974c2.346-.469 4.122-1.462 5.115-2.135a10.8 10.8 0 002.116.215z"
+      d="M12 20.25c4.97 0 9-3.134 9-7.125S16.97 6 12 6s-9 3.134-9 7.125c0 1.77.828 3.374 2.19 4.59-.465 1.79-1.35 3.072-1.356 3.081a.75.75 0 00.935.974c2.346-.469 4.122-1.462 5.115-2.135a10.8 10.8 0 002.116.215z"
     />
   </svg>
 </div>
@@ -316,8 +316,8 @@ export default function Home() {
     </div>
 
     <div id="about-us" className="section w-full px-6 py-1 bg-gray-200 flex relative">
-           <div className="w-[35%] pr-6">
-           <div className="relative">
+          <div className="w-[35%] pr-6">
+          <div className="relative">
       {/* Container for images */}
       <div className="flex items-center justify-center space-x-4 mb-4">
         <Image

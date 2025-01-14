@@ -47,56 +47,65 @@ export default function ProfilePage() {
     const mqttClientRef = useRef<mqtt.MqttClient | null>(null);
 
     useEffect(() => {
+        let mqttClient: mqtt.MqttClient | null = null;
+    
         const connectToMqtt = () => {
-        const mqttClient = mqtt.connect("ws://localhost:8083/mqtt", { keepalive: 60 });
-        mqttClientRef.current = mqttClient;
-
-        mqttClient.on("connect", () => {
-            console.log("Connected to MQTT broker");
-            setIsConnected(true);
-
-            const topics = generateTopics();
-            mqttClient.subscribe(topics, { qos: 1 }, (err) => {
-            if (err) {
-                console.error("Failed to subscribe:", err);
-            } else {
-                console.log("Subscribed to all sensor topics");
+            if (mqttClient) {
+                mqttClient.end(true); // Ensure the old client is closed before creating a new one
             }
+    
+            mqttClient = mqtt.connect("ws://localhost:8083/mqtt", { keepalive: 60 });
+    
+            mqttClient.on("connect", () => {
+                console.log("Connected to MQTT broker");
+                setIsConnected(true);
+    
+                const topics = generateTopics();
+                mqttClient?.subscribe(topics, { qos: 1 }, (err) => {
+                    if (err) {
+                        console.error("Failed to subscribe:", err);
+                    } else {
+                        console.log("Subscribed to all sensor topics");
+                    }
+                });
             });
-        });
-
-        mqttClient.on("message", (topic, message) => {
-            try {
-            const parsedMessage = JSON.parse(message.toString()) as SensorData;
-            dispatch({ type: "UPDATE_SENSOR_DATA", payload: { topic, data: parsedMessage } });
-            } catch (error) {
-            console.error("Error parsing message:", error);
-            }
-        });
-
-        mqttClient.on("close", () => {
-            console.log("Disconnected from MQTT broker");
-            setIsConnected(false);
-            setTimeout(() => {
-            console.log("Reconnecting to MQTT broker...");
-            connectToMqtt();
-            }, 5000);
-        });
-
-        mqttClient.on("error", (error) => {
-            console.error("MQTT Client Error:", error);
-        });
+    
+            mqttClient.on("message", (topic, message) => {
+                try {
+                    const parsedMessage = JSON.parse(message.toString()) as SensorData;
+                    dispatch({ type: "UPDATE_SENSOR_DATA", payload: { topic, data: parsedMessage } });
+                } catch (error) {
+                    console.error("Error parsing message:", error);
+                }
+            });
+    
+            mqttClient.on("close", () => {
+                console.log("Disconnected from MQTT broker");
+                setIsConnected(false);
+    
+                // Reconnect after a delay
+                setTimeout(() => {
+                    console.log("Reconnecting to MQTT broker...");
+                    connectToMqtt();
+                }, 5000);
+            });
+    
+            mqttClient.on("error", (error) => {
+                console.error("MQTT Client Error:", error);
+            });
         };
-
+    
         connectToMqtt();
-
+    
+        // Cleanup function
         return () => {
-        if (mqttClientRef.current) {
-            mqttClientRef.current.end(true);
-            mqttClientRef.current = null;
-        }
+            if (mqttClient) {
+                mqttClient.end(true);
+                console.log("MQTT client disconnected and cleaned up");
+            }
         };
     }, []);
+    
 
     function generateTopics(): string[] {
         const sources = 2;
