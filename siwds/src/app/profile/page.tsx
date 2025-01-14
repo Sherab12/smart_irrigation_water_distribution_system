@@ -15,7 +15,7 @@ interface SensorData {
     level?: number;
     valveStatus?: string;
     [key: string]: any;
-    }
+}
 
 interface SensorState {
     [source: string]: Record<string, SensorData>;
@@ -47,65 +47,55 @@ export default function ProfilePage() {
     const mqttClientRef = useRef<mqtt.MqttClient | null>(null);
 
     useEffect(() => {
-        let mqttClient: mqtt.MqttClient | null = null;
-    
-        const connectToMqtt = () => {
-            if (mqttClient) {
-                mqttClient.end(true); // Ensure the old client is closed before creating a new one
+        if (mqttClientRef.current) {
+        mqttClientRef.current.end(true);
+        }
+
+        mqttClientRef.current = mqtt.connect("ws://localhost:8083/mqtt", { keepalive: 60 });
+        const mqttClient = mqttClientRef.current;
+
+        mqttClient.on("connect", () => {
+        console.log("Connected to MQTT broker");
+        setIsConnected(true);
+
+        const topics = generateTopics();
+        mqttClient.subscribe(topics, { qos: 1 }, (err) => {
+            if (err) {
+            console.error("Failed to subscribe:", err);
+            } else {
+            console.log("Subscribed to all sensor topics");
             }
-    
-            mqttClient = mqtt.connect("ws://localhost:8083/mqtt", { keepalive: 60 });
-    
-            mqttClient.on("connect", () => {
-                console.log("Connected to MQTT broker");
-                setIsConnected(true);
-    
-                const topics = generateTopics();
-                mqttClient?.subscribe(topics, { qos: 1 }, (err) => {
-                    if (err) {
-                        console.error("Failed to subscribe:", err);
-                    } else {
-                        console.log("Subscribed to all sensor topics");
-                    }
-                });
-            });
-    
-            mqttClient.on("message", (topic, message) => {
-                try {
-                    const parsedMessage = JSON.parse(message.toString()) as SensorData;
-                    dispatch({ type: "UPDATE_SENSOR_DATA", payload: { topic, data: parsedMessage } });
-                } catch (error) {
-                    console.error("Error parsing message:", error);
-                }
-            });
-    
-            mqttClient.on("close", () => {
-                console.log("Disconnected from MQTT broker");
-                setIsConnected(false);
-    
-                // Reconnect after a delay
-                setTimeout(() => {
-                    console.log("Reconnecting to MQTT broker...");
-                    connectToMqtt();
-                }, 5000);
-            });
-    
-            mqttClient.on("error", (error) => {
-                console.error("MQTT Client Error:", error);
-            });
-        };
-    
-        connectToMqtt();
-    
-        // Cleanup function
+        });
+        });
+
+        mqttClient.on("message", (topic, message) => {
+        try {
+            const parsedMessage = JSON.parse(message.toString()) as SensorData;
+            dispatch({ type: "UPDATE_SENSOR_DATA", payload: { topic, data: parsedMessage } });
+        } catch (error) {
+            console.error("Error parsing message:", error);
+        }
+        });
+
+        mqttClient.on("close", () => {
+        console.log("Disconnected from MQTT broker");
+        setIsConnected(false);
+        setTimeout(() => {
+            console.log("Reconnecting to MQTT broker...");
+        }, 5000);
+        });
+
+        mqttClient.on("error", (error) => {
+        console.error("MQTT Client Error:", error);
+        });
+
         return () => {
-            if (mqttClient) {
-                mqttClient.end(true);
-                console.log("MQTT client disconnected and cleaned up");
-            }
+        if (mqttClientRef.current) {
+            mqttClientRef.current.end(true);
+            console.log("MQTT client disconnected and cleaned up");
+        }
         };
     }, []);
-    
 
     function generateTopics(): string[] {
         const sources = 2;
@@ -115,7 +105,6 @@ export default function ProfilePage() {
         const waterLevelSensors = 1;
 
         const topics: string[] = [];
-
         for (let source = 1; source <= sources; source++) {
         for (let flow = 1; flow <= flowSensors; flow++) {
             topics.push(`source${source}/flowsensor/flow${flow}`);
@@ -146,8 +135,7 @@ export default function ProfilePage() {
 
     return (
         <div className="flex">
-            <Navbar activePage="profile" />
-            
+        <Navbar activePage="profile" />
         <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
             <h1 className="text-lg font-bold mb-3">Real-Time Sensor Dashboard</h1>
             <div className="mb-3 flex items-center space-x-2 text-sm">
@@ -195,11 +183,27 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                 {["flowsensor", "pressuresensor", "valve", "waterlevelsensor"].map((type) => (
                     <div key={type}>
-                    <h3 className="text-sm font-bold mb-2 capitalize">{type.replace("sensor", "")}</h3>
+                    <h3 className="text-sm font-bold mb-2 capitalize">
+                        {type.replace("sensor", "")}
+                    </h3>
                     <div className="flex overflow-x-auto gap-4">
                         {Object.entries(sensors)
                         .filter(([key]) => key.startsWith(type))
                         .map(([key, data]) => {
+                            if (type === "valve") {
+                            return (
+                                <div
+                                key={key}
+                                className="flex flex-col items-center p-4 bg-white shadow rounded-md min-w-[200px]"
+                                >
+                                <h4 className="text-xs font-semibold mb-2">{key.toUpperCase()}</h4>
+                                <p className="text-lg font-bold text-gray-800">
+                                    {data.valveStatus === "open" ? "Open" : "Close"}
+                                </p>
+                                </div>
+                            );
+                            }
+
                             const maxValue =
                             type === "flowsensor"
                                 ? 10
@@ -237,12 +241,15 @@ export default function ProfilePage() {
                                     }}
                                 />
                                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-sm font-bold">
-                                    {(data.flowRate || data.pressure || data.level || 0).toFixed(2)} {unit}
+                                    {(data.flowRate || data.pressure || data.level || 0).toFixed(2)}{" "}
+                                    {unit}
                                 </div>
                                 </div>
                                 <div className="flex justify-between mt-1 text-xs text-gray-600 w-full">
                                 <span>0</span>
-                                <span>{maxValue} {unit}</span>
+                                <span>
+                                    {maxValue} {unit}
+                                </span>
                                 </div>
                                 {type === "flowsensor" && (
                                 <p className="mt-2 text-xs">
