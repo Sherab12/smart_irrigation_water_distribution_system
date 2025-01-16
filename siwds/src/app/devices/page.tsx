@@ -129,7 +129,7 @@ export default function DevicePage() {
         <div className="flex">
             <Navbar activePage="devices" />
 
-            <div className="flex flex-col w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
+            <div className="flex flex-col w-full p-6 ml-56 bg-gray-50 min-h-screen shadow-lg rounded-md m-4">
                 
 
                 {/* Add Source and Sensors */}
@@ -140,28 +140,28 @@ export default function DevicePage() {
                         placeholder="Source Name"
                         value={newSource}
                         onChange={(e) => setNewSource(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-2"
+                        className="p-2 border border-gray-300 rounded mr-1.5"
                     />
                     <input
                         type="text"
                         placeholder="Flow Sensors (comma-separated)"
                         value={newFlowSensors}
                         onChange={(e) => setNewFlowSensors(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-2"
+                        className="p-2 border border-gray-300 rounded mr-1.5"
                     />
                     <input
                         type="text"
                         placeholder="Pressure Sensors (comma-separated)"
                         value={newPressureSensors}
                         onChange={(e) => setNewPressureSensors(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-2"
+                        className="p-2 border border-gray-300 rounded mr-1.5"
                     />
                     <input
                         type="text"
                         placeholder="Valves (comma-separated)"
                         value={newValves}
                         onChange={(e) => setNewValves(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-2"
+                        className="p-2 border border-gray-300 rounded mr-1.5"
                     />
                     <button onClick={addSource} className="p-2 bg-blue-500 text-white rounded">
                         Add Source

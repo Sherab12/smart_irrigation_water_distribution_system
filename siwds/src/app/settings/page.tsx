@@ -8,24 +8,6 @@ import Navbar from "../../components/navbar";
 import Link from "next/link";
 
 export default function SettingsPage() {
-    const router = useRouter();
-    const [data, setData] = useState("nothing");
-    
-
-    const logout = async () => {
-        try {
-            await axios.get("/api/users/logout");
-            toast.success("Logout successful");
-            router.push("/");
-        } catch (error) {
-            toast.error(error.message);
-        }
-    };
-
-    const getUserDetails = async () => {
-        const res = await axios.get("/api/users/me", { withCredentials: true });
-        setData(res.data.data._id);
-    };
 
     return (
         <div className="flex">
@@ -33,7 +15,7 @@ export default function SettingsPage() {
             <Navbar activePage="settings" />
 
             {/* Main Content */}
-            <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
+            <div className="flex flex-col ml-56 items-center min-h-screen justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
                 SETTINGS PAGE
             </div>
         </div>

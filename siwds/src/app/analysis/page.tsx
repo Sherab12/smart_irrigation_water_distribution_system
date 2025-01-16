@@ -8,24 +8,6 @@ import Navbar from "../../components/navbar";
 import Link from "next/link";
 
 export default function AnalysisPage() {
-    const router = useRouter();
-    const [data, setData] = useState("nothing");
-    
-
-    const logout = async () => {
-        try {
-            await axios.get("/api/users/logout");
-            toast.success("Logout successful");
-            router.push("/");
-        } catch (error) {
-            toast.error(error.message);
-        }
-    };
-
-    const getUserDetails = async () => {
-        const res = await axios.get("/api/users/me", { withCredentials: true });
-        setData(res.data.data._id);
-    };
 
     return (
         <div className="flex">
@@ -33,7 +15,7 @@ export default function AnalysisPage() {
             <Navbar activePage="analysis" />
 
             {/* Main Content */}
-            <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
+            <div className="flex flex-col ml-56 items-center justify-center min-h-screen w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
                 ANAYSIS PAGE
             </div>
         </div>

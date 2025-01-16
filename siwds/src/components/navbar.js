@@ -22,13 +22,13 @@ const Navbar = ({ activePage }) => {
     const isActive = (page) => activePage === page ? "bg-blue-800 text-white" : "hover:bg-blue-800 hover:text-white";
 
     return (
-        <nav className="bg-white-gray-800 w-64 h-screen p-4 rounded-sm">
+        <nav className="bg-white-gray-800 w-64 fixed h-screen p-4 rounded-sm">
             <h1 className="text-xl font-bold mb-4 text-blue-800">AgriFlow</h1>
             <ul>
                 <li className="mb-2">
                     <button
                         onClick={() => router.push("/profile")}
-                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-full text-left ${isActive('profile')}`}
+                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-44 text-left ${isActive('profile')}`}
                     >
                         <FaTachometerAlt className={`mr-2 ${activePage === 'profile' ? 'text-white' : 'text-blue-400'}`} /> Dashboard
                     </button>
@@ -36,7 +36,7 @@ const Navbar = ({ activePage }) => {
                 <li className="mb-2">
                     <button
                         onClick={() => router.push("/schedule")}
-                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-full text-left ${isActive('schedule')}`}
+                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-44 text-left ${isActive('schedule')}`}
                     >
                         <FaCalendarAlt className={`mr-2 ${activePage === 'schedule' ? 'text-white' : 'text-blue-400'}`} /> Schedule
                     </button>
@@ -44,7 +44,7 @@ const Navbar = ({ activePage }) => {
                 <li className="mb-2">
                     <button
                         onClick={() => router.push("/devices")}
-                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-full text-left ${isActive('devices')}`}
+                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-44 text-left ${isActive('devices')}`}
                     >
                         <FaCogs className={`mr-2 ${activePage === 'devices' ? 'text-white' : 'text-blue-400'}`} /> Devices
                     </button>
@@ -52,7 +52,7 @@ const Navbar = ({ activePage }) => {
                 <li className="mb-2">
                     <button
                         onClick={() => router.push("/analysis")}
-                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-full text-left ${isActive('analysis')}`}
+                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-44 text-left ${isActive('analysis')}`}
                     >
                         <FaChartLine className={`mr-2 ${activePage === 'analysis' ? 'text-white' : 'text-blue-400'}`} /> Analysis
                     </button>
@@ -60,7 +60,7 @@ const Navbar = ({ activePage }) => {
                 <li className="mb-2">
                     <button
                         onClick={() => router.push("/alerts")}
-                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-full text-left ${isActive('alerts')}`}
+                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-44 text-left ${isActive('alerts')}`}
                     >
                         <FaBell className={`mr-2 ${activePage === 'alerts' ? 'text-white' : 'text-blue-400'}`} /> Alerts
                     </button>
@@ -68,7 +68,7 @@ const Navbar = ({ activePage }) => {
                 <li className="mb-2">
                     <button
                         onClick={() => router.push("/settings")}
-                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-full text-left ${isActive('settings')}`}
+                        className={`flex text-sm items-center px-4 py-2 rounded-sm transition duration-200 w-44 text-left ${isActive('settings')}`}
                     >
                         <FaCogs className={`mr-2 ${activePage === 'settings' ? 'text-white' : 'text-blue-400'}`} /> Settings
                     </button>
@@ -76,7 +76,7 @@ const Navbar = ({ activePage }) => {
                 <li className="mb-2">
                     <button
                         onClick={() => setShowModal(true)} // Show logout confirmation modal
-                        className="flex text-sm items-center px-4 py-2 rounded-sm hover:bg-blue-800 hover:text-white transition duration-200 w-full text-left"
+                        className="flex text-sm items-center px-4 py-2 rounded-sm hover:bg-blue-800 hover:text-white transition duration-200 w-44 text-left"
                     >
                         <FaSignOutAlt className="mr-2 text-blue-400" /> Log Out
                     </button>

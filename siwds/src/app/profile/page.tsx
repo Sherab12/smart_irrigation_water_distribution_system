@@ -135,8 +135,10 @@ export default function ProfilePage() {
 
     return (
         <div className="flex">
-        <Navbar activePage="profile" />
-        <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
+        
+                <Navbar activePage="profile" />
+            
+        <div className="flex flex-col items-center justify-center ml-56 w-full min-h-screen p-6 bg-gray-50 shadow-lg rounded-md m-4">
             <h1 className="text-lg font-bold mb-3">Real-Time Sensor Dashboard</h1>
             <div className="mb-3 flex items-center space-x-2 text-sm">
                 <span>Status:</span>

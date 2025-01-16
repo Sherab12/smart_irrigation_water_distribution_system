@@ -171,7 +171,7 @@ export default function SchedulePage() {
     return (
         <div className="flex">
             <Navbar activePage="schedule" />
-            <div className="flex flex-col items-center justify-center w-full p-8 bg-white shadow-lg rounded-lg m-4">
+            <div className="flex flex-col items-center ml-56 justify-center min-h-screen w-full p-8 bg-white shadow-lg rounded-lg m-4">
                 <h1 className="text-3xl font-bold mb-6 text-blue-700">Schedule Management</h1>
                 {loading ? (
                     <p className="text-gray-500">Loading...</p>

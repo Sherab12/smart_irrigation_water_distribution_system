@@ -12,7 +12,7 @@ export default function AlertsPage() {
             <Navbar activePage="alerts" />
 
             {/* Main Content */}
-            <div className="flex flex-col items-center justify-center w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
+            <div className="flex flex-col items-center ml-56 justify-center min-h-screen w-full p-6 bg-gray-50 shadow-lg rounded-md m-4">
                 ALERTS PAGE
             </div>
         </div>
