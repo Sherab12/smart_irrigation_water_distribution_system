@@ -34,8 +34,18 @@ export default function DevicePage() {
     const [selectedSource, setSelectedSource] = useState<string>("");
     const [selectedSensorType, setSelectedSensorType] = useState<string>("flowSensors");
     const [selectedSensor, setSelectedSensor] = useState<string>("");
-    const [sensorData, setSensorData] = useState<any>(null); // Use `any` or define a more general type
+    const [sensorData, setSensorData] = useState<any>(null); // Use any or define a more general type
     const [showValidationModal, setShowValidationModal] = useState(false); // Validation modal visibility state
+    const [fieldSource, setFieldSource] = useState<string>("");
+    const [fieldName, setFieldName] = useState<string>("");
+    const [fieldSize, setFieldSize] = useState<string>("");
+    const [selectedFlowSensor, setSelectedFlowSensor] = useState<string>("");
+    const [autoSelectedValve, setAutoSelectedValve] = useState<string>("");
+    const [sensorType, setSensorType] = useState<string>("flowSensors");
+    const [selectedFieldSource, setSelectedFieldSource] = useState<string>(""); // For Add Field Details
+const [fieldFlowSensor, setFieldFlowSensor] = useState<string>(""); // For Add Field Details
+
+
 
     // Fetch sources on component mount
     useEffect(() => {
@@ -56,6 +66,61 @@ export default function DevicePage() {
         fetchSources();
     }, []);
 
+    useEffect(() => {
+        if (fieldSource && selectedFlowSensor) {
+            const flowIndex = sources[fieldSource]?.flowSensors.indexOf(selectedFlowSensor);
+            if (flowIndex !== -1) {
+                setAutoSelectedValve(sources[fieldSource]?.valves[flowIndex] || "");
+            } else {
+                setAutoSelectedValve("");
+            }
+        }
+    }, [fieldSource, selectedFlowSensor, sources]);
+    
+
+
+    // Add field details
+    const addFieldDetails = async () => {
+        console.log("Field Name:", fieldName);
+        console.log("Field Size:", fieldSize);
+        console.log("Flow Sensor:", selectedFlowSensor); // Debugging
+        console.log("Valve:", autoSelectedValve); // Debugging
+        console.log("Source:", fieldSource);
+    
+        // Validation check for required fields
+        if (!fieldName || !fieldSize || !selectedFlowSensor || !autoSelectedValve || !fieldSource) {
+            setShowValidationModal(true);
+            return;
+        }
+    
+        try {
+            // Post the data to the server
+            const response = await axios.post("/api/field", {
+                fieldName,
+                fieldSize,
+                flowSensor: selectedFlowSensor,
+                valve: autoSelectedValve,
+                source: fieldSource,
+            });
+    
+            if (response.data.success) {
+                toast.success(response.data.message);
+                // Reset form fields after successful submission
+                setFieldName("");
+                setFieldSize("");
+                setSelectedFlowSensor("");
+                setAutoSelectedValve("");
+                setFieldSource("");
+            } else {
+                toast.error(response.data.error || "Failed to add field details");
+            }
+        } catch (error) {
+            toast.error("Failed to add field details");
+            console.error("Error adding field details:", error);
+        }
+    };
+    
+
     // Fetch sensor data
     const fetchSensorData = async () => {
         if (!selectedSource || !selectedSensor) {
@@ -64,7 +129,8 @@ export default function DevicePage() {
         }
 
         try {
-            const response = await axios.get(`/api/source?source=${selectedSource}&sensor=${selectedSensor}`);
+            const response = await axios.get(`/api/source?source=${selectedSource}&sensorType=${selectedSensorType}&sensor=${selectedSensor}`);
+
             if (response.status === 200) {
                 setSensorData(response.data);
                 toast.success("Sensor data fetched successfully");
@@ -140,33 +206,106 @@ export default function DevicePage() {
                         placeholder="Source Name"
                         value={newSource}
                         onChange={(e) => setNewSource(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-1.5"
+                        className="p-2 border border-gray-300 rounded mr-2"
                     />
                     <input
                         type="text"
                         placeholder="Flow Sensors (comma-separated)"
                         value={newFlowSensors}
                         onChange={(e) => setNewFlowSensors(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-1.5"
+                        className="p-2 border border-gray-300 rounded mr-2"
                     />
                     <input
                         type="text"
                         placeholder="Pressure Sensors (comma-separated)"
                         value={newPressureSensors}
                         onChange={(e) => setNewPressureSensors(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-1.5"
+                        className="p-2 border border-gray-300 rounded mr-2"
                     />
                     <input
                         type="text"
                         placeholder="Valves (comma-separated)"
                         value={newValves}
                         onChange={(e) => setNewValves(e.target.value)}
-                        className="p-2 border border-gray-300 rounded mr-1.5"
+                        className="p-2 border border-gray-300 rounded mr-2"
                     />
-                    <button onClick={addSource} className="p-2 bg-blue-500 text-white rounded">
+                    <button onClick={addSource} className="p-2 bg-blue-500 mt-4 text-white rounded">
                         Add Source
                     </button>
                 </div>
+
+
+        {/* Add Field Details Section */}
+        <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-4">Add Field Details</h2>
+
+            {/* Field Name, Size, and Source */}
+            <div className="flex items-center mb-4 space-x-2">
+                <input
+                    type="text"
+                    placeholder="Field Name"
+                    value={fieldName}
+                    onChange={(e) => setFieldName(e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                />
+                <input
+                    type="text"
+                    placeholder="Field Size"
+                    value={fieldSize}
+                    onChange={(e) => setFieldSize(e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                />
+                <select
+                    value={fieldSource}
+                    onChange={(e) => setFieldSource(e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                >
+                    <option value="">Select Source</option>
+                    {Object.keys(sources).map((source) => (
+                        <option key={source} value={source}>
+                            {source}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Flow Sensor and Valve */}
+            {fieldSource && (
+                <div className="flex items-center space-x-2 mb-4">
+                    <select
+                        value={selectedFlowSensor}
+                        onChange={(e) => setSelectedFlowSensor(e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                    >
+                        <option value="">Select Flow Sensor</option>
+                        {sources[fieldSource]?.flowSensors.map((sensor, index) => (
+                            <option key={index} value={sensor}>
+                                {sensor}
+                            </option>
+                        ))}
+                    </select>
+                    <input
+                        type="text"
+                        placeholder="Valve"
+                        value={
+                            sources[fieldSource]?.valves[
+                                sources[fieldSource]?.flowSensors.indexOf(selectedFlowSensor)
+                            ] || ""
+                        }
+                        readOnly
+                        className="p-2 border border-gray-300 rounded bg-gray-100"
+                    />
+                </div>
+            )}
+
+            <button onClick={addFieldDetails} className="p-2 bg-blue-500 text-white rounded">
+                Add Field
+            </button>
+        </div>
+
+
+
+
 
                 {/* Select Source and Sensor */}
                 <div className="mb-6">
@@ -249,4 +388,4 @@ export default function DevicePage() {
             <ValidationModal show={showValidationModal} onClose={closeValidationModal} />
         </div>
     );
-}
+} 
