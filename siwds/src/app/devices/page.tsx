@@ -41,11 +41,6 @@ export default function DevicePage() {
     const [fieldSize, setFieldSize] = useState<string>("");
     const [selectedFlowSensor, setSelectedFlowSensor] = useState<string>("");
     const [autoSelectedValve, setAutoSelectedValve] = useState<string>("");
-    const [sensorType, setSensorType] = useState<string>("flowSensors");
-    const [selectedFieldSource, setSelectedFieldSource] = useState<string>(""); // For Add Field Details
-const [fieldFlowSensor, setFieldFlowSensor] = useState<string>(""); // For Add Field Details
-
-
 
     // Fetch sources on component mount
     useEffect(() => {
@@ -203,28 +198,28 @@ const [fieldFlowSensor, setFieldFlowSensor] = useState<string>(""); // For Add F
                     <h2 className="text-lg font-semibold mb-2">Add New Source and Sensors</h2>
                     <input
                         type="text"
-                        placeholder="Source Name"
+                        placeholder="(source1, source2, ... )"
                         value={newSource}
                         onChange={(e) => setNewSource(e.target.value)}
                         className="p-2 border border-gray-300 rounded mr-2"
                     />
                     <input
                         type="text"
-                        placeholder="Flow Sensors (comma-separated)"
+                        placeholder="( flow1, flow2, flow3, ... )"
                         value={newFlowSensors}
                         onChange={(e) => setNewFlowSensors(e.target.value)}
                         className="p-2 border border-gray-300 rounded mr-2"
                     />
                     <input
                         type="text"
-                        placeholder="Pressure Sensors (comma-separated)"
+                        placeholder="( pressure1, pressure2, ... )"
                         value={newPressureSensors}
                         onChange={(e) => setNewPressureSensors(e.target.value)}
                         className="p-2 border border-gray-300 rounded mr-2"
                     />
                     <input
                         type="text"
-                        placeholder="Valves (comma-separated)"
+                        placeholder="( valve1, valve2, valve3, ...)"
                         value={newValves}
                         onChange={(e) => setNewValves(e.target.value)}
                         className="p-2 border border-gray-300 rounded mr-2"
@@ -250,7 +245,7 @@ const [fieldFlowSensor, setFieldFlowSensor] = useState<string>(""); // For Add F
                 />
                 <input
                     type="text"
-                    placeholder="Field Size"
+                    placeholder="Field Size (in km2)"
                     value={fieldSize}
                     onChange={(e) => setFieldSize(e.target.value)}
                     className="p-2 border border-gray-300 rounded"
@@ -302,10 +297,6 @@ const [fieldFlowSensor, setFieldFlowSensor] = useState<string>(""); // For Add F
                 Add Field
             </button>
         </div>
-
-
-
-
 
                 {/* Select Source and Sensor */}
                 <div className="mb-6">
