@@ -9,138 +9,137 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface SensorData {
-    flowRate?: number;
-    totalWaterFlown?: number;
-    pressure?: number;
-    level?: number;
-    valveStatus?: string;
-    [key: string]: any;
+  flowRate?: number;
+  totalWaterFlown?: number;
+  pressure?: number;
+  level?: number;
+  valveStatus?: string;
+  [key: string]: any;
+}
+
+interface FieldData {
+  fieldName: string;
+  fieldSize: string;
+  source: string;
+  flowSensor: string;
 }
 
 interface SensorState {
-    [source: string]: Record<string, SensorData>;
+  [topic: string]: SensorData;
 }
 
 function sensorReducer(
-    state: SensorState,
-    action: { type: string; payload: { topic: string; data: SensorData } }
-    ): SensorState {
-    switch (action.type) {
-        case "UPDATE_SENSOR_DATA":
-        const { topic, data } = action.payload;
-        const [source, sensorType] = topic.split("/");
-        return {
-            ...state,
-            [source]: {
-            ...(state[source] || {}),
-            [sensorType]: { ...(state[source]?.[sensorType] || {}), ...data },
-            },
-        };
-        default:
-        return state;
-    }
+  state: SensorState,
+  action: { type: string; payload: { topic: string; data: SensorData } }
+): SensorState {
+  switch (action.type) {
+    case "UPDATE_SENSOR_DATA":
+      const { topic, data } = action.payload;
+      return { ...state, [topic]: { ...(state[topic] || {}), ...data } };
+    default:
+      return state;
+  }
 }
 
 export default function ProfilePage() {
-    const [sensorData, dispatch] = useReducer(sensorReducer, {});
-    const [isConnected, setIsConnected] = useState(false);
-    const mqttClientRef = useRef<mqtt.MqttClient | null>(null);
+  const [sensorData, dispatch] = useReducer(sensorReducer, {});
+  const [isConnected, setIsConnected] = useState(false);
+  const [fields, setFields] = useState<FieldData[]>([]); // State to store fields data
+  const mqttClientRef = useRef<mqtt.MqttClient | null>(null);
 
-    useEffect(() => {
-        if (mqttClientRef.current) {
-        mqttClientRef.current.end(true);
+  // Fetch fields data from the database
+  useEffect(() => {
+    async function fetchFields() {
+      try {
+        const response = await fetch("/api/field", { method: "GET" });
+        const data = await response.json();
+        if (data.success) {
+          setFields(data.data);
+        } else {
+          console.error("Failed to fetch fields:", data.message);
         }
+      } catch (error) {
+        console.error("Error fetching fields:", error);
+      }
+    }
+    fetchFields();
+  }, []);
 
-        mqttClientRef.current = mqtt.connect("ws://localhost:8083/mqtt", { keepalive: 60 });
-        const mqttClient = mqttClientRef.current;
-
-        mqttClient.on("connect", () => {
-        console.log("Connected to MQTT broker");
-        setIsConnected(true);
-
-        const topics = generateTopics();
-        mqttClient.subscribe(topics, { qos: 1 }, (err) => {
-            if (err) {
-            console.error("Failed to subscribe:", err);
-            } else {
-            console.log("Subscribed to all sensor topics");
-            }
-        });
-        });
-
-        mqttClient.on("message", (topic, message) => {
-        try {
-            const parsedMessage = JSON.parse(message.toString()) as SensorData;
-            dispatch({ type: "UPDATE_SENSOR_DATA", payload: { topic, data: parsedMessage } });
-        } catch (error) {
-            console.error("Error parsing message:", error);
-        }
-        });
-
-        mqttClient.on("close", () => {
-        console.log("Disconnected from MQTT broker");
-        setIsConnected(false);
-        setTimeout(() => {
-            console.log("Reconnecting to MQTT broker...");
-        }, 5000);
-        });
-
-        mqttClient.on("error", (error) => {
-        console.error("MQTT Client Error:", error);
-        });
-
-        return () => {
-        if (mqttClientRef.current) {
-            mqttClientRef.current.end(true);
-            console.log("MQTT client disconnected and cleaned up");
-        }
-        };
-    }, []);
-
-    function generateTopics(): string[] {
-        const sources = 2;
-        const flowSensors = 4;
-        const pressureSensors = 2;
-        const valves = 5;
-        const waterLevelSensors = 1;
-
-        const topics: string[] = [];
-        for (let source = 1; source <= sources; source++) {
-        for (let flow = 1; flow <= flowSensors; flow++) {
-            topics.push(`source${source}/flowsensor/flow${flow}`);
-        }
-        for (let pressure = 1; pressure <= pressureSensors; pressure++) {
-            topics.push(`source${source}/pressuresensor/pressure${pressure}`);
-        }
-        for (let valve = 1; valve <= valves; valve++) {
-            topics.push(`source${source}/valve/valve${valve}`);
-        }
-        for (let level = 1; level <= waterLevelSensors; level++) {
-            topics.push(`source${source}/waterlevelsensor/level${level}`);
-        }
-        }
-        return topics;
+  // MQTT client setup
+  useEffect(() => {
+    if (mqttClientRef.current) {
+      mqttClientRef.current.end(true);
     }
 
-    const createSemicircularData = (value: number, maxValue: number) => ({
-        labels: ["Current Value", "Remaining"],
-        datasets: [
-        {
-            data: [value, Math.max(maxValue - value, 0)],
-            backgroundColor: ["#42a5f5", "#e0e0e0"],
-            borderWidth: 0,
-        },
-        ],
+    mqttClientRef.current = mqtt.connect("ws://localhost:8083/mqtt", { keepalive: 60 });
+    const mqttClient = mqttClientRef.current;
+
+    mqttClient.on("connect", () => {
+      console.log("Connected to MQTT broker");
+      setIsConnected(true);
+
+      fields.forEach((field) => {
+        const flowTopic = `${field.source}/flowsensor/${field.flowSensor}`;
+        mqttClient.subscribe(flowTopic, { qos: 1 }, (err) => {
+          if (err) {
+            console.error(`Failed to subscribe to ${flowTopic}:`, err);
+          } else {
+            console.log(`Subscribed to ${flowTopic}`);
+          }
+        });
+      });
     });
 
-    return (
-        <div className="flex">
-        
-                <Navbar activePage="profile" />
-            
-        <div className="flex flex-col items-center justify-center ml-56 w-full min-h-screen p-6 bg-gray-50 shadow-lg rounded-md m-4">
-            <h1 className="text-lg font-bold mb-3">Real-Time Sensor Dashboard</h1>
-            <div className="mb-3 flex items-center space-x-2 text-sm">
+    mqttClient.on("message", (topic, message) => {
+      try {
+        const parsedMessage = JSON.parse(message.toString()) as SensorData;
+        dispatch({ type: "UPDATE_SENSOR_DATA", payload: { topic, data: parsedMessage } });
+      } catch (error) {
+        console.error("Error parsing message:", error);
+      }
+    });
+
+    mqttClient.on("close", () => {
+      console.log("Disconnected from MQTT broker");
+      setIsConnected(false);
+    });
+
+    mqttClient.on("error", (error) => {
+      console.error("MQTT Client Error:", error);
+    });
+
+    return () => {
+      if (mqttClientRef.current) {
+        mqttClientRef.current.end(true);
+        console.log("MQTT client disconnected and cleaned up");
+      }
+    };
+  }, [fields]);
+
+  const createSemicircularData = (value: number, maxValue: number) => ({
+    labels: ["Flow Rate", "Remaining"],
+    datasets: [
+      {
+        data: [value, Math.max(maxValue - value, 0)],
+        backgroundColor: ["#42a5f5", "#e0e0e0"],
+        borderWidth: 0,
+      },
+    ],
+  });
+
+  // Group fields by source
+  const groupedFields = fields.reduce((acc, field) => {
+    if (!acc[field.source]) acc[field.source] = [];
+    acc[field.source].push(field);
+    return acc;
+  }, {} as { [source: string]: FieldData[] });
+
+  return (
+    <div className="flex">
+      <Navbar activePage="profile" />
+      <div className="flex flex-col items-center justify-center ml-56 w-full min-h-screen p-6 bg-gray-50 shadow-lg rounded-md m-4">
+        <h1 className="text-lg font-bold mb-3">Real-Time Sensor Dashboard</h1>
+        <div className="mb-3 flex items-center space-x-2 text-sm">
                 <span>Status:</span>
                 <span
                     className={`flex items-center space-x-1 font-semibold ${
@@ -179,95 +178,57 @@ export default function ProfilePage() {
                     )}
                 </span>
             </div>
-            {Object.entries(sensorData).map(([source, sensors]) => (
-            <div key={source} className="w-full mb-6">
-                <h2 className="text-md font-bold mb-3">{source.toUpperCase()}</h2>
-                <div className="space-y-6">
-                {["flowsensor", "pressuresensor", "valve", "waterlevelsensor"].map((type) => (
-                    <div key={type}>
-                    <h3 className="text-sm font-bold mb-2 capitalize">
-                        {type.replace("sensor", "")}
-                    </h3>
-                    <div className="flex overflow-x-auto gap-4">
-                        {Object.entries(sensors)
-                        .filter(([key]) => key.startsWith(type))
-                        .map(([key, data]) => {
-                            if (type === "valve") {
-                            return (
-                                <div
-                                key={key}
-                                className="flex flex-col items-center p-4 bg-white shadow rounded-md min-w-[200px]"
-                                >
-                                <h4 className="text-xs font-semibold mb-2">{key.toUpperCase()}</h4>
-                                <p className="text-lg font-bold text-gray-800">
-                                    {data.valveStatus === "open" ? "Open" : "Close"}
-                                </p>
-                                </div>
-                            );
-                            }
 
-                            const maxValue =
-                            type === "flowsensor"
-                                ? 10
-                                : type === "pressuresensor"
-                                ? 100000
-                                : type === "waterlevelsensor"
-                                ? 100
-                                : 1;
-                            const unit =
-                            type === "flowsensor"
-                                ? "L/s"
-                                : type === "pressuresensor"
-                                ? "Pa"
-                                : type === "waterlevelsensor"
-                                ? "%"
-                                : "";
+        {Object.keys(groupedFields).map((source) => (
+          <div key={source} className="mb-6 w-full">
+            <h2 className="text-lg font-semibold mb-2">{source}</h2>
+            {groupedFields[source].map((field) => {
+              const flowTopic = `${field.source}/flowsensor/${field.flowSensor}`;
+              const flowRate = sensorData[flowTopic]?.flowRate || 0;
+              const totalWaterFlown = sensorData[flowTopic]?.totalWaterFlown || 0;
+              const maxValue = 100; // Max value for the chart
 
-                            return (
-                            <div
-                                key={key}
-                                className="flex flex-col items-center p-4 bg-white shadow rounded-md min-w-[200px]"
-                            >
-                                <h4 className="text-xs font-semibold mb-2">{key.toUpperCase()}</h4>
-                                <div className="relative">
-                                <Doughnut
-                                    data={createSemicircularData(
-                                    data.flowRate || data.pressure || data.level || 0,
-                                    maxValue
-                                    )}
-                                    options={{
-                                    rotation: -90,
-                                    circumference: 180,
-                                    plugins: { legend: { display: false } },
-                                    cutout: "70%",
-                                    }}
-                                />
-                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-sm font-bold">
-                                    {(data.flowRate || data.pressure || data.level || 0).toFixed(2)}{" "}
-                                    {unit}
-                                </div>
-                                </div>
-                                <div className="flex justify-between mt-1 text-xs text-gray-600 w-full">
-                                <span>0</span>
-                                <span>
-                                    {maxValue} {unit}
-                                </span>
-                                </div>
-                                {type === "flowsensor" && (
-                                <p className="mt-2 text-xs">
-                                    <strong>Total Water Flow:</strong> {data.totalWaterFlown || 0} L
-                                </p>
-                                )}
-                            </div>
-                            );
-                        })}
+              return (
+                <div
+                  key={field.fieldName}
+                  className="bg-white shadow rounded-md p-4 w-full max-w-lg mb-4"
+                >
+                  <h3 className="font-bold text-sm mb-1">{field.fieldName}</h3>
+                  <p className="text-sm">Field Size: {field.fieldSize}</p>
+                  <div className="relative w-52 mx-auto mt-4">
+                    <Doughnut
+                        data={createSemicircularData(flowRate, maxValue)}
+                        options={{
+                        circumference: 180,
+                        rotation: -90,
+                        plugins: { legend: { display: false } },
+                        cutout: "70%",
+                        }}
+                    />
+                    {/* Flow Rate Label */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/8 text-center">
+                        <span className="font-bold text-base mb-2">{flowRate.toFixed(2)} L/min</span>
+                    </div>
+                    {/* Left Limit */}
+                    <div className="absolute bottom-7 left-3 text-sm text-gray-600">
+                        <span>0</span>
+                    </div>
+                    {/* Right Limit */}
+                    <div className="absolute bottom-7 right-1 text-sm text-gray-600">
+                        <span>{maxValue}</span>
                     </div>
                     </div>
-                ))}
+                    {/* Total Water Flown */}
+                    <p className="text-sm mt-2 text-center">
+                    Total Water Flowed: {totalWaterFlown.toFixed(2)} L
+                    </p>
+
                 </div>
-            </div>
-            ))}
-        </div>
-        </div>
-    );
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
