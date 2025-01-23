@@ -22,6 +22,7 @@ interface FieldData {
   fieldSize: string;
   source: string;
   flowSensor: string;
+  valve: string;
 }
 
 interface SensorState {
@@ -40,6 +41,7 @@ function sensorReducer(
       return state;
   }
 }
+
 
 export default function ProfilePage() {
   const [sensorData, dispatch] = useReducer(sensorReducer, {});
@@ -70,16 +72,17 @@ export default function ProfilePage() {
     if (mqttClientRef.current) {
       mqttClientRef.current.end(true);
     }
-
+  
     mqttClientRef.current = mqtt.connect("ws://localhost:8083/mqtt", { keepalive: 60 });
     const mqttClient = mqttClientRef.current;
-
+  
     mqttClient.on("connect", () => {
       console.log("Connected to MQTT broker");
       setIsConnected(true);
-
+  
       fields.forEach((field) => {
         const flowTopic = `${field.source}/flowsensor/${field.flowSensor}`;
+        const valveTopic = `${field.source}/valve/${field.valve}`;
         mqttClient.subscribe(flowTopic, { qos: 1 }, (err) => {
           if (err) {
             console.error(`Failed to subscribe to ${flowTopic}:`, err);
@@ -87,9 +90,16 @@ export default function ProfilePage() {
             console.log(`Subscribed to ${flowTopic}`);
           }
         });
+        mqttClient.subscribe(valveTopic, { qos: 1 }, (err) => {
+          if (err) {
+            console.error(`Failed to subscribe to ${valveTopic}:`, err);
+          } else {
+            console.log(`Subscribed to ${valveTopic}`);
+          }
+        });
       });
     });
-
+  
     mqttClient.on("message", (topic, message) => {
       try {
         const parsedMessage = JSON.parse(message.toString()) as SensorData;
@@ -98,16 +108,16 @@ export default function ProfilePage() {
         console.error("Error parsing message:", error);
       }
     });
-
+  
     mqttClient.on("close", () => {
       console.log("Disconnected from MQTT broker");
       setIsConnected(false);
     });
-
+  
     mqttClient.on("error", (error) => {
       console.error("MQTT Client Error:", error);
     });
-
+  
     return () => {
       if (mqttClientRef.current) {
         mqttClientRef.current.end(true);
@@ -179,55 +189,133 @@ export default function ProfilePage() {
                 </span>
             </div>
 
-        {Object.keys(groupedFields).map((source) => (
-          <div key={source} className="mb-6 w-full">
-            <h2 className="text-lg font-semibold mb-2">{source}</h2>
-            {groupedFields[source].map((field) => {
-              const flowTopic = `${field.source}/flowsensor/${field.flowSensor}`;
-              const flowRate = sensorData[flowTopic]?.flowRate || 0;
-              const totalWaterFlown = sensorData[flowTopic]?.totalWaterFlown || 0;
-              const maxValue = 100; // Max value for the chart
+            {Object.keys(groupedFields).map((source) => (
+              <div key={source} className="mb-6 w-full">
+                <h2 className="text-lg font-semibold mb-4 text-center text-gray-700">{source}</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {groupedFields[source].map((field) => {
+                  const flowTopic = `${field.source}/flowsensor/${field.flowSensor}`;
+                  const valveTopic = `${field.source}/valve/${field.valve}`;
+                  const flowRate = sensorData[flowTopic]?.flowRate || 0;
+                  const totalWaterFlown = sensorData[flowTopic]?.totalWaterFlown || 0;
+                  const valveStatus = sensorData[valveTopic]?.valveStatus || "Closed"; // Default to Closed
+                  const maxValue = 10; // Max value for the chart
 
-              return (
-                <div
-                  key={field.fieldName}
-                  className="bg-white shadow rounded-md p-4 w-full max-w-lg mb-4"
-                >
-                  <h3 className="font-bold text-sm mb-1">{field.fieldName}</h3>
-                  <p className="text-sm">Field Size: {field.fieldSize}</p>
-                  <div className="relative w-52 mx-auto mt-4">
-                    <Doughnut
-                        data={createSemicircularData(flowRate, maxValue)}
-                        options={{
-                        circumference: 180,
-                        rotation: -90,
-                        plugins: { legend: { display: false } },
-                        cutout: "70%",
-                        }}
-                    />
-                    {/* Flow Rate Label */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/8 text-center">
-                        <span className="font-bold text-base mb-2">{flowRate.toFixed(2)} L/min</span>
-                    </div>
-                    {/* Left Limit */}
-                    <div className="absolute bottom-7 left-3 text-sm text-gray-600">
-                        <span>0</span>
-                    </div>
-                    {/* Right Limit */}
-                    <div className="absolute bottom-7 right-1 text-sm text-gray-600">
-                        <span>{maxValue}</span>
-                    </div>
-                    </div>
-                    {/* Total Water Flown */}
-                    <p className="text-sm mt-2 text-center">
-                    Total Water Flowed: {totalWaterFlown.toFixed(2)} L
-                    </p>
+                  const toggleValve = () => {
+                    // Simply update the UI based on the received MQTT message.
+                    console.log(`Valve status toggled based on received data: ${valveStatus}`);
+                  };
+                  
+                  
 
+                  return (
+                    <div
+                      key={field.fieldName}
+                      className="bg-white shadow-lg rounded-lg p-6 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300"
+                    >
+                      <h3 className="font-bold text-gray-800 text-center mb-2">{field.fieldName}</h3>
+                      <p className="text-sm text-gray-600 mb-2 text-center">
+                        Field Size: <span className="font-medium">{field.fieldSize} km&sup2;</span>
+                      </p>
+                      <div className="relative w-52 mx-auto">
+                        <Doughnut
+                          data={createSemicircularData(flowRate, maxValue)}
+                          options={{
+                            circumference: 180,
+                            rotation: -90,
+                            plugins: { legend: { display: false } },
+                            cutout: "70%",
+                          }}
+                        />
+                        {/* Flow Rate Label */}
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 text-center">
+                          <span className="font-bold text-base">{flowRate.toFixed(2)} L/min</span>
+                        </div>
+                        {/* Left Limit */}
+                        <div className="absolute bottom-7 left-3 text-xs text-gray-600">
+                          <span>0</span>
+                        </div>
+                        {/* Right Limit */}
+                        <div className="absolute bottom-7 right-1 text-xs text-gray-600">
+                          <span>{maxValue}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-1 text-center">
+                        <p className="text-sm text-gray-600">
+                          Total Water Flown:{" "}
+                          <span className="font-medium">{totalWaterFlown} L</span>
+                        </p>
+                      </div>
+
+                      <div className="mt-1 text-center">
+                        <p className="text-sm text-gray-600">
+                          Valve Status:{" "}
+                          <span className="font-medium">{valveStatus}</span>
+                        </p>
+                      </div>
+
+                      
+
+                      {/* Valve Status and Toggle */}
+                    
+                      <div className="mt-4 text-center">
+                        <div className="flex items-center justify-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            {/* The checkbox reflects valveStatus, ensure it's controlled by this state */}
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={valveStatus === "open"} // Check if the status is Open
+                              onChange={() => {
+                                // You can toggle the valve status here (if you want to toggle manually)
+                                const newStatus = valveStatus === "open" ? "closed" : "open";
+                                console.log(`Valve status manually toggled to ${newStatus}`);
+
+                                // You can send an MQTT message here to update the valve state.
+                                // e.g., mqttClient.publish(valveTopic, JSON.stringify({ valveStatus: newStatus }));
+                              }}
+                            />
+                            <div
+                              className={`relative w-32 h-14 rounded-full flex items-center transition-colors ${
+                                valveStatus === "open" ? "bg-green-500" : "bg-red-500"
+                              }`}
+                            >
+                              {/* Text for Open */}
+                              <span
+                                className={`absolute left-5 text-white font-semibold text-base transition-opacity ease-in-out duration-200 ${
+                                  valveStatus === "open" ? "opacity-100" : "opacity-0"
+                                }`}
+                              >
+                                Open
+                              </span>
+
+                              {/* Text for Close */}
+                              <span
+                                className={`absolute right-5 text-white font-semibold text-base transition-opacity ease-in-out duration-200 ${
+                                  valveStatus === "open" ? "opacity-0" : "opacity-100"
+                                }`}
+                              >
+                                Close
+                              </span>
+
+                              {/* Slider Knob */}
+                              <span
+                                className={`absolute w-12 h-12 bg-white border-2 border-gray-300 rounded-full transition-transform ease-in-out duration-200 ${
+                                  valveStatus === "open" ? "translate-x-20" : "translate-x-1"
+                                }`}
+                              ></span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })}
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              </div>
+            ))}
       </div>
     </div>
   );
