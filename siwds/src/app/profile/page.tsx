@@ -198,7 +198,7 @@ export default function ProfilePage() {
                   const valveTopic = `${field.source}/valve/${field.valve}`;
                   const flowRate = sensorData[flowTopic]?.flowRate || 0;
                   const totalWaterFlown = sensorData[flowTopic]?.totalWaterFlown || 0;
-                  const valveStatus = sensorData[valveTopic]?.valveStatus || "Closed"; // Default to Closed
+                  const valveStatus = sensorData[valveTopic]?.valveStatus || "closed"; // Default to Closed
                   const maxValue = 10; // Max value for the chart
 
                   const toggleValve = () => {
@@ -309,7 +309,6 @@ export default function ProfilePage() {
                           </label>
                         </div>
                       </div>
-
                     </div>
                   );
                 })}

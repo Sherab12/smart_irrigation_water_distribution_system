@@ -4,6 +4,11 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import Navbar from "../../components/navbar";
+import { Doughnut } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip } from "chart.js";
+
+ChartJS.register(ArcElement, Tooltip);
+
 
 // Validation Modal Component
 const ValidationModal = ({ show, onClose }: { show: boolean, onClose: () => void }) => {
@@ -25,6 +30,17 @@ const ValidationModal = ({ show, onClose }: { show: boolean, onClose: () => void
     );
 };
 
+const createSemicircularData = (value, maxValue) => ({
+    labels: ["Used", "Remaining"],
+    datasets: [
+        {
+            data: [value, Math.max(maxValue - value, 0)],
+            backgroundColor: ["#42a5f5", "#e0e0e0"],
+            borderWidth: 0,
+        },
+    ],
+});
+
 export default function DevicePage() {
     const [sources, setSources] = useState<Record<string, { flowSensors: string[]; pressureSensors: string[]; valves: string[] }>>({});
     const [newSource, setNewSource] = useState<string>("");
@@ -41,6 +57,7 @@ export default function DevicePage() {
     const [fieldSize, setFieldSize] = useState<string>("");
     const [selectedFlowSensor, setSelectedFlowSensor] = useState<string>("");
     const [autoSelectedValve, setAutoSelectedValve] = useState<string>("");
+    const maxValue = 10;
 
     // Fetch sources on component mount
     useEffect(() => {
@@ -62,6 +79,7 @@ export default function DevicePage() {
     }, []);
 
     useEffect(() => {
+        
         if (fieldSource && selectedFlowSensor) {
             const flowIndex = sources[fieldSource]?.flowSensors.indexOf(selectedFlowSensor);
             if (flowIndex !== -1) {
@@ -347,21 +365,53 @@ export default function DevicePage() {
                 {/* Display Sensor Data */}
                 {sensorData && (
                     <div className="p-4 bg-white shadow rounded">
-                        <h3 className="text-lg font-semibold mb-2">Sensor Data</h3>
+                        {/* <h3 className="text-lg font-semibold mb-2">Sensor Data</h3> */}
 
                         {/* Handle flow sensor data */}
-                        {sensorData.flowRate !== undefined && (
-                            <div>
-                                <p>Flow Rate: {sensorData.flowRate}</p>
-                                <p>Total Water Flow: {sensorData.totalWaterFlow}</p>
+                        {sensorData.totalWaterFlow !== undefined && (
+                        <div className="flex flex-col items-center">
+                            <h5 className="text-lg font-semibold mb-5">Total Water Flow</h5>
+                            <div style={{ width: "200px", height: "100px" }}> {/* Adjust size here */}
+                            <Doughnut
+                                data={createSemicircularData(sensorData.totalWaterFlow, maxValue)}
+                                options={{
+                                circumference: 180,
+                                rotation: -90,
+                                plugins: { legend: { display: false } },
+                                cutout: "70%", // Inner circle size
+                                responsive: true, // Ensure responsiveness
+                                maintainAspectRatio: false, // Prevent auto-stretching
+                                }}
+                            />
                             </div>
+                            <p className="mt-2 text-gray-700">
+                            {sensorData.totalWaterFlow} L/min used out of {maxValue} L/min
+                            </p>
+                        </div>
                         )}
+
 
                         {/* Handle pressure sensor data */}
                         {sensorData.pressure !== undefined && (
-                            <div>
-                                <p>Pressure: {sensorData.pressure}</p>
+                        <div className="flex flex-col items-center">
+                            <h5 className="text-lg font-semibold mb-5">Pressure</h5>
+                            <div style={{ width: "200px", height: "100px" }}> {/* Adjust size here */}
+                            <Doughnut
+                                data={createSemicircularData(sensorData.pressure, maxValue)}
+                                options={{
+                                circumference: 180,
+                                rotation: -90,
+                                plugins: { legend: { display: false } },
+                                cutout: "70%", // Inner circle size
+                                responsive: true, // Ensure responsiveness
+                                maintainAspectRatio: false, // Prevent auto-stretching
+                                }}
+                            />
                             </div>
+                            <p className="mt-2 text-gray-700">
+                                {sensorData.pressure} Pa
+                            </p>
+                        </div>
                         )}
 
                         {/* Handle valve data */}
