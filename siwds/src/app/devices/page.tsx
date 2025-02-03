@@ -142,9 +142,10 @@ export default function DevicePage() {
         }
 
         try {
-            const response = await axios.get(`/api/source?source=${selectedSource}&sensorType=${selectedSensorType}&sensor=${selectedSensor}`);
+            const response = await axios.get(`/api/source?source=${selectedSource}&sensor=${selectedSensor}`);
 
             if (response.status === 200) {
+                
                 setSensorData(response.data);
                 toast.success("Sensor data fetched successfully");
             } else {
@@ -350,11 +351,12 @@ export default function DevicePage() {
                             >
                                 <option value="">Select Sensor</option>
                                 {sources[selectedSource]?.[selectedSensorType]?.map((sensor) => (
-                                    <option key={sensor} value={sensor}>
-                                        {sensor}
+                                    <option key={sensor._id} value={sensor.name}>
+                                        {sensor.name} {/* Ensure this is a string */}
                                     </option>
                                 ))}
                             </select>
+
                         </>
                     )}
                     <button onClick={fetchSensorData} className="p-2 bg-green-500 text-white rounded">

@@ -68,13 +68,13 @@ export async function GET(req: Request) {
 
   try {
     if (!source && !sensor) {
-      // Return all sources
+      // Return all sources with full sensor details
       const allSources = await Source.find();
       const formattedSources = allSources.reduce((acc, source) => {
         acc[source.name] = {
-          flowSensors: source.flowSensors.map((s: { name: any; }) => s.name),
-          pressureSensors: source.pressureSensors.map((s: { name: any; }) => s.name),
-          valves: source.valves.map((v: { name: any; }) => v.name),
+          flowSensors: source.flowSensors,  // ✅ Return full flow sensor objects
+          pressureSensors: source.pressureSensors,  // ✅ Return full pressure sensor objects
+          valves: source.valves,  // ✅ Return full valve objects
         };
         return acc;
       }, {});
@@ -112,3 +112,4 @@ export async function GET(req: Request) {
     );
   }
 }
+
