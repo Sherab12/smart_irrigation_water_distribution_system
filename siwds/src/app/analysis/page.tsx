@@ -115,7 +115,7 @@ export default function AnalysisPage() {
 
                 {/* Total Water Consumption Graph */}
                 <div className="w-full max-w-4xl mb-6">
-                    <h2 className="text-xl text-center font-semibold mb-4 mt-2">Total Water Consumption</h2>
+                    <h2 className="text-xl text-center font-semibold mb-4 mt-2 text-black">Total Water Consumption</h2>
                     <Bar data={totalWaterPerSource} />
                 </div>
 
@@ -160,7 +160,7 @@ export default function AnalysisPage() {
                                     className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md"
                                     onClick={() => handleSourceClick(source.name)}
                                 >
-                                    <span className="text-lg font-semibold text-gray-800">{source.name}</span>
+                                    <span className="text-lg font-semibold text-blue-800">{source.name}</span>
                                     <span className={`transform transition-transform ${expandedSource === source.name ? "rotate-90" : "rotate-0"}`}>
                                         ➤
                                     </span>

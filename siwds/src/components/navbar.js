@@ -85,19 +85,19 @@ const Navbar = ({ activePage }) => {
 
             {/* Logout Confirmation Modal */}
             {showModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white rounded-md shadow-lg p-6 w-96">
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"> 
+                    <div className="bg-white rounded-md shadow-lg p-6 w-96 z-50"> 
                         <h2 className="text-xl text-center font-bold mb-4">Are you sure?</h2>
                         <p className="mb-4 text-center">Do you want to log out?</p>
                         <div className="flex justify-center space-x-6">
                             <button
-                                onClick={() => setShowModal(false)} // Close modal
+                                onClick={() => setShowModal(false)}
                                 className="bg-gray-500 text-white text-center py-2 px-4 rounded hover:bg-gray-600"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={handleLogout} // Proceed with logout
+                                onClick={handleLogout}
                                 className="bg-red-500 text-white text-center py-2 px-4 rounded hover:bg-red-600"
                             >
                                 Yes, Logout
@@ -106,6 +106,7 @@ const Navbar = ({ activePage }) => {
                     </div>
                 </div>
             )}
+
         </nav>
     );
 };

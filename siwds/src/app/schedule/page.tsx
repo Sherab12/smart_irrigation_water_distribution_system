@@ -160,7 +160,7 @@ export default function SchedulePage() {
         <div className="flex">
             <Navbar activePage="schedule" />
             <div className="flex flex-col items-center ml-56 justify-center min-h-screen w-full p-8 bg-white shadow-lg rounded-lg m-4">
-                <h1 className="text-3xl font-bold mb-6 text-blue-700">Schedule Management</h1>
+                <h1 className="text-2xl font-bold mb-6 text-blue-700">Schedule Management</h1>
                 {loading ? (
                     <p className="text-gray-500">Loading...</p>
                 ) : (
@@ -254,13 +254,13 @@ export default function SchedulePage() {
                 )}
                 {showConfirmModal && confirmFieldIndex !== null && (
                     <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
-                        <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-                            <h2 className="text-2xl font-bold mb-4">Confirm</h2>
-                            <p>Are you sure you want to remove the schedule?</p>
-                            <div className="flex justify-end mt-4">
+                        <div className="bg-white items-center rounded-lg shadow-lg p-6 w-96">
+                            <h2 className="text-2xl text-center font-bold mb-4">Confirm</h2>
+                            <p className="text-center">Are you sure you want to remove the schedule?</p>
+                            <div className="flex justify-center mt-4">
                                 <button
                                     onClick={handleConfirmRemoveSchedule}
-                                    className="bg-red-500 text-white px-4 py-2 rounded mr-2"
+                                    className="bg-red-500 text-white px-4 py-2 rounded mr-4"
                                 >
                                     Remove
                                 </button>
