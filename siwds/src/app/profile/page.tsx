@@ -258,7 +258,6 @@ export default function ProfilePage() {
                       
 
                       {/* Valve Status and Toggle */}
-                    
                       <div className="mt-4 text-center">
                         <div className="flex items-center justify-center">
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -266,16 +265,29 @@ export default function ProfilePage() {
                             <input
                               type="checkbox"
                               className="sr-only peer"
-                              checked={valveStatus === "open"} // Check if the status is Open
+                              checked={valveStatus === "open"} // Reflect current status
                               onChange={() => {
-                                // You can toggle the valve status here (if you want to toggle manually)
                                 const newStatus = valveStatus === "open" ? "closed" : "open";
-                                console.log(`Valve status manually toggled to ${newStatus}`);
+                                console.log(`Manually toggling valve to: ${newStatus}`);
 
-                                // You can send an MQTT message here to update the valve state.
-                                // e.g., mqttClient.publish(valveTopic, JSON.stringify({ valveStatus: newStatus }));
+                                // Update UI immediately for instant feedback
+                                dispatch({
+                                  type: "UPDATE_SENSOR_DATA",
+                                  payload: { topic: valveTopic, data: { valveStatus: newStatus } }
+                                });
+
+                                // Send MQTT command to change valve status
+                                if (mqttClientRef.current) {
+                                  mqttClientRef.current.publish(
+                                    valveTopic,
+                                    JSON.stringify({ valveStatus: newStatus }),
+                                    { qos: 1 }
+                                  );
+                                }
                               }}
                             />
+
+
                             <div
                               className={`relative w-32 h-14 rounded-full flex items-center transition-colors ${
                                 valveStatus === "open" ? "bg-green-500" : "bg-red-500"

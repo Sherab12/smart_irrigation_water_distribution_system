@@ -9,7 +9,6 @@ import { Chart as ChartJS, ArcElement, Tooltip } from "chart.js";
 
 ChartJS.register(ArcElement, Tooltip);
 
-
 // Validation Modal Component
 const ValidationModal = ({ show, onClose }: { show: boolean, onClose: () => void }) => {
     if (!show) return null;
@@ -42,7 +41,7 @@ const createSemicircularData = (value, maxValue) => ({
 });
 
 export default function DevicePage() {
-    const [sources, setSources] = useState<Record<string, { flowSensors: string[]; pressureSensors: string[]; valves: string[] }>>({});
+    const [sources, setSources] = useState<Record<string, { flowSensors: { name: string }[]; pressureSensors: any[]; valves: { name: string, state: string, percentageOpen: number }[] }>>({});
     const [newSource, setNewSource] = useState<string>("");
     const [newFlowSensors, setNewFlowSensors] = useState<string>("");
     const [newPressureSensors, setNewPressureSensors] = useState<string>("");
@@ -79,35 +78,30 @@ export default function DevicePage() {
     }, []);
 
     useEffect(() => {
-        
         if (fieldSource && selectedFlowSensor) {
-            const flowIndex = sources[fieldSource]?.flowSensors.indexOf(selectedFlowSensor);
+            const flowIndex = sources[fieldSource]?.flowSensors.findIndex(
+                (sensor: any) => sensor?.name === selectedFlowSensor
+            );
             if (flowIndex !== -1) {
-                setAutoSelectedValve(sources[fieldSource]?.valves[flowIndex] || "");
+                setAutoSelectedValve(sources[fieldSource]?.valves[flowIndex]?.name || "");
             } else {
                 setAutoSelectedValve("");
             }
         }
     }, [fieldSource, selectedFlowSensor, sources]);
     
+    
 
+    
 
     // Add field details
     const addFieldDetails = async () => {
-        console.log("Field Name:", fieldName);
-        console.log("Field Size:", fieldSize);
-        console.log("Flow Sensor:", selectedFlowSensor); // Debugging
-        console.log("Valve:", autoSelectedValve); // Debugging
-        console.log("Source:", fieldSource);
-    
-        // Validation check for required fields
         if (!fieldName || !fieldSize || !selectedFlowSensor || !autoSelectedValve || !fieldSource) {
             setShowValidationModal(true);
             return;
         }
     
         try {
-            // Post the data to the server
             const response = await axios.post("/api/field", {
                 fieldName,
                 fieldSize,
@@ -118,7 +112,6 @@ export default function DevicePage() {
     
             if (response.data.success) {
                 toast.success(response.data.message);
-                // Reset form fields after successful submission
                 setFieldName("");
                 setFieldSize("");
                 setSelectedFlowSensor("");
@@ -133,6 +126,7 @@ export default function DevicePage() {
         }
     };
     
+    
 
     // Fetch sensor data
     const fetchSensorData = async () => {
@@ -142,8 +136,7 @@ export default function DevicePage() {
         }
 
         try {
-            const response = await axios.get(`/api/source?source=${selectedSource}&sensor=${selectedSensor}`);
-
+            const response = await axios.get(`/api/source?sensorType=${selectedSensorType}&source=${selectedSource}&sensor=${selectedSensor}`);
             if (response.status === 200) {
                 
                 setSensorData(response.data);
@@ -180,12 +173,6 @@ export default function DevicePage() {
             if (response.data.success) {
                 toast.success(response.data.message);
 
-                // Update the local sources state
-                setSources((prevSources) => ({
-                    ...prevSources,
-                    [newSource]: { flowSensors, pressureSensors, valves },
-                }));
-
                 // Reset input fields
                 setNewSource("");
                 setNewFlowSensors("");
@@ -204,6 +191,21 @@ export default function DevicePage() {
     const closeValidationModal = () => {
         setShowValidationModal(false);
     };
+
+    console.log("Field Source:", fieldSource);
+console.log("Flow Sensors:", sources[fieldSource]?.flowSensors);
+console.log("Valves:", sources[fieldSource]?.valves);
+console.log(
+    "Selected Valve:",
+    sources[fieldSource]?.valves?.[
+        sources[fieldSource]?.flowSensors?.findIndex(
+            (sensor: any) => sensor?.name === selectedFlowSensor
+        )
+    ]
+);
+
+
+
 
     return (
         <div className="flex">
@@ -278,6 +280,7 @@ export default function DevicePage() {
                     {Object.keys(sources).map((source) => (
                         <option key={source} value={source}>
                             {source}
+                            
                         </option>
                     ))}
                 </select>
@@ -287,24 +290,28 @@ export default function DevicePage() {
             {fieldSource && (
                 <div className="flex items-center space-x-2 mb-4">
                     <select
-                        value={selectedFlowSensor}
-                        onChange={(e) => setSelectedFlowSensor(e.target.value)}
-                        className="p-2 border border-gray-300 rounded"
-                    >
-                        <option value="">Select Flow Sensor</option>
-                        {sources[fieldSource]?.flowSensors.map((sensor, index) => (
-                            <option key={index} value={sensor}>
-                                {sensor}
-                            </option>
-                        ))}
-                    </select>
+    value={selectedFlowSensor}
+    onChange={(e) => setSelectedFlowSensor(e.target.value)}
+    className="p-2 border border-gray-300 rounded"
+>
+    <option value="">Select Flow Sensor</option>
+    {sources[fieldSource]?.flowSensors?.map((sensor, index) => (
+        <option key={index} value={sensor.name}>
+            {sensor.name}
+        </option>
+    ))}
+</select>
+
+
                     <input
                         type="text"
                         placeholder="Valve"
                         value={
-                            sources[fieldSource]?.valves[
-                                sources[fieldSource]?.flowSensors.indexOf(selectedFlowSensor)
-                            ] || ""
+                            sources[fieldSource]?.valves?.[
+                                sources[fieldSource]?.flowSensors?.findIndex(
+                                    (sensor: any) => sensor?.name === selectedFlowSensor
+                                )
+                            ]?.name || ""  // Optional chaining for safe access
                         }
                         readOnly
                         className="p-2 border border-gray-300 rounded bg-gray-100"
@@ -350,12 +357,13 @@ export default function DevicePage() {
                                 className="p-2 border border-gray-300 rounded mr-2"
                             >
                                 <option value="">Select Sensor</option>
-                                {sources[selectedSource]?.[selectedSensorType]?.map((sensor) => (
-                                    <option key={sensor._id} value={sensor.name}>
-                                        {sensor.name} {/* Ensure this is a string */}
+                                {sources[selectedSource]?.[selectedSensorType]?.map((sensor, index) => (
+                                    <option key={sensor._id || index} value={sensor.name || sensor}>
+                                        {sensor.name || sensor}
                                     </option>
                                 ))}
                             </select>
+
 
                         </>
                     )}
