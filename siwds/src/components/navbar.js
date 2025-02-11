@@ -92,7 +92,7 @@ const Navbar = ({ activePage }) => {
                         <div className="flex justify-center space-x-6">
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="bg-gray-500 text-white text-center py-2 px-4 rounded hover:bg-gray-600"
+                                className="bg-gray-400 text-white text-center py-2 px-4 rounded hover:bg-gray-600"
                             >
                                 Cancel
                             </button>

@@ -190,8 +190,6 @@ export default function SettingsPage() {
             console.error(error);
         }
     };
-    
-    
 
     return (
         <div className="flex">
@@ -221,9 +219,9 @@ export default function SettingsPage() {
                 {/* Fields Table */}
                 {selectedTab === 'field' && (
                     <div className="w-full max-w-5xl mt-4">
-                        <table className="w-full border-collapse rounded-md shadow-sm">
+                        <table className="w-full border-collapse shadow-sm rounded-md overflow-hidden">
                             <thead>
-                                <tr className="bg-gray-200 text-gray-700 border-b">
+                                <tr className="bg-gray-100 border-b">
                                     <th className="px-4 py-3 text-left">Field Name</th>
                                     <th className="px-4 py-3 text-left">Size</th>
                                     <th className="px-4 py-3 text-left">Flow Sensor</th>
@@ -260,8 +258,6 @@ export default function SettingsPage() {
                                         >
                                             Delete
                                         </button>
-
-
                                         </td>
                                     </tr>
                                 ))}
@@ -325,7 +321,7 @@ export default function SettingsPage() {
                             <h2 className="text-lg font-semibold text-center mb-4">Confirm Deletion</h2>
                             <p>Are you sure you want to delete this {sourceDeleteConfirmation.type}?</p>
                             <div className="flex justify-center space-x-4 mt-4">
-                                <button className="bg-gray-400 px-4 py-2 rounded-md" onClick={closeSourceDeleteModal}>Cancel</button>
+                                <button className="bg-gray-400 px-4 text-white py-2 rounded-md hover:bg-gray-600" onClick={closeSourceDeleteModal}>Cancel</button>
                                 <button className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600" onClick={handleConfirmSourceDelete}>Confirm</button>
                             </div>
                         </div>
