@@ -287,7 +287,6 @@ export default function ProfilePage() {
                               }}
                             />
 
-
                             <div
                               className={`relative w-32 h-14 rounded-full flex items-center transition-colors ${
                                 valveStatus === "open" ? "bg-green-500" : "bg-red-500"

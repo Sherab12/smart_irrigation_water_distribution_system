@@ -113,3 +113,85 @@ export async function GET(req: Request) {
   }
 }
 
+// DELETE API: Remove a sensor or valve from a source
+export async function DELETE(req: Request) {
+  await connect();
+
+  try {
+    const { sourceName, sensorName, type } = await req.json();
+
+    if (!sourceName || !sensorName || !type) {
+      return NextResponse.json(
+        { error: "Source name, sensor name, and type are required" },
+        { status: 400 }
+      );
+    }
+
+    const source = await Source.findOne({ name: sourceName });
+
+    if (!source) {
+      return NextResponse.json({ error: "Source not found" }, { status: 404 });
+    }
+
+    if (type === "Flow Sensor") {
+      source.flowSensors = source.flowSensors.filter((s: any) => s.name !== sensorName);
+    } else if (type === "Pressure Sensor") {
+      source.pressureSensors = source.pressureSensors.filter((s: any) => s.name !== sensorName);
+    } else if (type === "Valve") {
+      source.valves = source.valves.filter((s: any) => s.name !== sensorName);
+    }
+
+    await source.save();
+
+    return NextResponse.json({ success: true, message: "Sensor/Valve deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting sensor/valve:", error);
+    return NextResponse.json({ error: "Failed to delete sensor/valve" }, { status: 500 });
+  }
+}
+
+// PUT API: Edit a sensor or valve inside a source
+export async function PUT(req: Request) {
+  await connect();
+
+  try {
+    const { sourceName, oldSensorName, newSensorName, type } = await req.json();
+
+    if (!sourceName || !oldSensorName || !newSensorName || !type) {
+      return NextResponse.json(
+        { error: "Source name, old sensor name, new sensor name, and type are required" },
+        { status: 400 }
+      );
+    }
+
+    const source = await Source.findOne({ name: sourceName });
+
+    if (!source) {
+      return NextResponse.json({ error: "Source not found" }, { status: 404 });
+    }
+
+    let sensorList;
+
+    if (type === "Flow Sensor") {
+      sensorList = source.flowSensors;
+    } else if (type === "Pressure Sensor") {
+      sensorList = source.pressureSensors;
+    } else if (type === "Valve") {
+      sensorList = source.valves;
+    }
+
+    const sensor = sensorList.find((s: any) => s.name === oldSensorName);
+
+    if (!sensor) {
+      return NextResponse.json({ error: "Sensor not found" }, { status: 404 });
+    }
+
+    sensor.name = newSensorName;
+    await source.save();
+
+    return NextResponse.json({ success: true, message: "Sensor/Valve updated successfully" });
+  } catch (error) {
+    console.error("Error updating sensor/valve:", error);
+    return NextResponse.json({ error: "Failed to update sensor/valve" }, { status: 500 });
+  }
+}
